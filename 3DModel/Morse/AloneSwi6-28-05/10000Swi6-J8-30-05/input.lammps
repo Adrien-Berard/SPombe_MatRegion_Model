@@ -17,7 +17,7 @@ neigh_modify every 1 delay 0 check yes
 
 # Define morse potentials D - alpha - r0 
 pair_style	morse 8.0 # Cutoff
-pair_coeff	* * 6 2 2.0 # Define all pair coeff to be like that
+pair_coeff	* * 8 2 2.0 # Define all pair coeff to be like that
 
 
 
