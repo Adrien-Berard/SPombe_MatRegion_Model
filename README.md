@@ -182,6 +182,24 @@ Then let install all the packages needed like python, cmake and C and fortran co
 brew update    # Update homebrew
 brew upgrade    # Upgrade installed packages
 brew install cmake ccache gcc openmpi fftw jpeg libpng python3 openblas lapack hdf5     # Install packages   
+
+```
+Since you now have CMake, we can get the files of LAMMPS from GitHub. If you don't know about GitHub, check <https://github.com/>.
+
+```bash
+cd /users/your_username/folder_where_lammps_should_be_installed              # Change your username and your folder name according to what you'd like.           
+git clone -b release https://github.com/lammps/lammps.git modified_lammps
+```
+
+This command will get you the latest version of LAMMPS on a new binary in the folder modified_lammps. Usually a later version than the one used in this repository should be ok. If you want to keep you LAMMPS version up to date here is why you should type in you terminal :
+
+```bash
+cd modified_lammps               # Go to the directory where LAMMPS is installed
+git checkout release      # not needed if you always stay in this branch
+git checkout stable       # use one of these 4 checkout commands
+git checkout develop      # to choose the branch to follow
+git checkout maintenance
+git pull
 ```
 
 #### Windows <a name="WindowsLAMMPSInstallation"></a>
