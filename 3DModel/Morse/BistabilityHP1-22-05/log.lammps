@@ -1,0 +1,691 @@
+LAMMPS (17 Apr 2024)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+#package gpu 1 split 0.75
+# VARIABLES
+variable fname index InitialFile.txt
+variable simname index InitialFile
+
+# Initialization
+units		lj
+boundary	    p p p
+atom_style	bond
+
+read_restart	restart.equil
+Reading restart file ...
+  restart file = 17 Apr 2024, LAMMPS = 17 Apr 2024
+  restoring atom style bond from restart
+  orthogonal box = (0 0 0) to (500 500 500)
+  1 by 2 by 5 MPI processor grid
+  restoring pair style morse from restart
+  restoring bond style harmonic from restart
+  2210 atoms
+  229 bonds
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0.5     
+  special bond factors coul:  0        0        0.5     
+    12 = max # of 1-2 neighbors
+    42 = max # of 1-3 neighbors
+   304 = max # of 1-4 neighbors
+    21 = max # of special neighbors
+  special bonds CPU = 0.001 seconds
+  read_restart CPU = 0.002 seconds
+# read_data InitialFile.txt extra/bond/per/atom 5 extra/special/per/atom 5
+
+# Dreiding potential information
+neighbor	2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+# Define the bond potential
+# Type - Energy - Equilibrium bond length
+bond_style      harmonic
+bond_coeff	Normal 30 1
+bond_coeff	MM 30 1
+bond_coeff  PolyPromoter 30 4
+special_bonds lj/coul 0.0 0.0 0.5
+
+# Define morse potentials D - alpha - r0
+pair_style	morse 8.0 # Cutoff
+pair_coeff	* * 1 2 2.0 # Define all pair coeff to be like that
+pair_coeff M M 1 2 1.0 # Define M-M pair coeff
+pair_coeff A N 1 2 4.0
+pair_coeff U N 1 2 4.0
+pair_coeff M N 1 2 2.0   # Preference of the nucleus for the heterochromatin
+
+# Pair coeff for HP1
+pair_coeff HP A 0 2 2.0
+pair_coeff HP U 0 2 2.0
+pair_coeff HP N 1 2 2.0
+pair_coeff HP NA 0 2 2.0
+pair_coeff HP NU 0 2 2.0
+pair_coeff HP NM 0 2 2.0
+pair_coeff HP M 3 2 2.0
+pair_coeff HP HP 3 2 2.0
+
+
+#####################################################
+# Chromatin, CenH Region, Promoter and Transcription
+
+group chromatin type 1 2 3
+200 atoms in group chromatin
+group Mtype type 3
+73 atoms in group Mtype
+group chromatin_and_poly type 1 2 3 5
+210 atoms in group chromatin_and_poly
+group polymerases type 5
+10 atoms in group polymerases
+group nucleus type 4
+1000 atoms in group nucleus
+group cenH id 61:90
+30 atoms in group cenH
+group promoter id 120 121 122
+3 atoms in group promoter
+group promo_and_poly union promoter polymerases
+13 atoms in group promo_and_poly
+group yfp id 123:130
+8 atoms in group yfp
+group mcherry id 150:155
+6 atoms in group mcherry
+group outOFCenH subtract chromatin cenH
+170 atoms in group outOFCenH
+group M_Atoms type 3
+73 atoms in group M_Atoms
+group NotPromoter subtract chromatin promoter
+197 atoms in group NotPromoter
+group TranscriptionReactionGroup union yfp mcherry polymerases
+24 atoms in group TranscriptionReactionGroup
+group nucleus_and_hetero type 3 4
+1073 atoms in group nucleus_and_hetero
+group hp1 type 10
+1000 atoms in group hp1
+group atoms_mobile type 1 2 3 5 10
+1210 atoms in group atoms_mobile
+#####################################################
+
+
+#####################################################
+# set timestep of integrator
+
+timestep 0.01
+
+#####################################################
+# Compute properties
+compute R2 chromatin gyration
+
+# Compute coordination number of N atoms around each atom
+compute coordMtype Mtype coord/atom cutoff 2.0 group Mtype
+
+# Define an atom-style variable to store the coordination number
+variable my_coord atom c_coordMtype
+
+#compute pe chromatin pe
+
+#####################################################
+# Equilibration (Brownian dynamics at 300 K)
+
+# Not necessary anymore as it is already equilibrated
+
+#velocity 	chromatin_and_poly create 1.0 12315
+#fix		1 chromatin_and_poly nve/limit 0.5
+#fix 2 atoms_mobile langevin 1.0 1.0 1.0 12315
+#thermo_style	custom step temp
+#thermo          10000
+
+
+#run		1000000
+
+#write_restart restart.equil
+# Not necessary anymore to have a restart file as it is already loaded
+
+#####################################################
+
+
+dump mydmp all atom 500 dump.lammpstrj
+
+timestep 0.001
+#####################################################
+molecule AM_post AM_post-reaction.template
+Read molecule template AM_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AM_pre AM_pre-reaction.template
+Read molecule template AM_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AU_post AU_post-reaction.template
+Read molecule template AU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 1
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AU_pre AU_pre-reaction.template
+Read molecule template AU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MA_post MA_post-reaction.template
+Read molecule template MA_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MA_pre MA_pre-reaction.template
+Read molecule template MA_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MU_post MU_post-reaction.template
+Read molecule template MU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MU_pre MU_pre-reaction.template
+Read molecule template MU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+
+molecule Transcription_MU_post Transcription_post-reaction_MU.template
+Read molecule template Transcription_MU_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule Transcription_MU_pre Transcription_pre-reaction_MU.template
+Read molecule template Transcription_MU_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule Transcription_UA_post Transcription_post-reaction_UA.template
+Read molecule template Transcription_UA_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule Transcription_UA_pre Transcription_pre-reaction_UA.template
+Read molecule template Transcription_UA_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule UnactivationPoly_post UnactivationPoly_post-reaction.template
+Read molecule template UnactivationPoly_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  4 atoms with max type 6
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule UnactivationPoly_pre UnactivationPoly_pre-reaction.template
+Read molecule template UnactivationPoly_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  4 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_A_pre ReactivationPoly_A_pre-reaction.template
+Read molecule template ReactivationPoly_A_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 6
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_A_post ReactivationPoly_A_post-reaction.template
+Read molecule template ReactivationPoly_A_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_U_pre ReactivationPoly_U_pre-reaction.template
+Read molecule template ReactivationPoly_U_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 6
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_U_post ReactivationPoly_U_post-reaction.template
+Read molecule template ReactivationPoly_U_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+
+
+#####################################################
+# Do the reactions
+
+fix 4 all bond/react      react reacAU chromatin 1 0 2 AM_pre AM_post simple.map rate_limit 1 1e4 molecule intra       react reacMU chromatin 1 0 2 AU_pre AU_post simple.map rate_limit 1 1e4  molecule intra       react reacUA chromatin 1 0 2 MA_pre MA_post simple.map rate_limit 1 1e4  molecule intra       react reacUM chromatin 1 0 2 MU_pre MU_post simple.map rate_limit 1 1e4  molecule intra      react reacUnactivationPoly promo_and_poly 1 0 2 UnactivationPoly_pre UnactivationPoly_post UnactivationPoly.map molecule inter prob 1e-1  3519
+dynamic group bond_react_MASTER_group defined
+    #react reacUMcenH cenH 1 0 2 MU_pre MU_post simple.map molecule intra prob 1e-4 3890     #react reacUAcenH cenH 1 0 2 MA_pre MA_post simple.map molecule intra prob 1e-4  2866     #react reacTranscription1 TranscriptionReactionGroup 1 0 3 Transcription_MU_pre Transcription_MU_post transcription_2steps.map molecule inter prob 1e-1  254     #react reacTranscription2 TranscriptionReactionGroup 1 0 3 Transcription_UA_pre Transcription_UA_post transcription_2steps.map molecule inter prob 1e-1  8902     #react reacReactivationPolyA chromatin_and_poly 1 0 2 ReactivationPoly_A_pre ReactivationPoly_A_post ReactivationPoly.map molecule inter prob 1e-3  254     #react reacReactivationPolyU chromatin_and_poly 1 0 2 ReactivationPoly_U_pre ReactivationPoly_U_post ReactivationPoly.map molecule inter prob 1e-3  890
+
+
+#####################################################
+
+thermo_style custom step temp c_R2[0] f_4[1] f_4[2] f_4[3] f_4[4]
+thermo_modify line yaml
+thermo 10000
+#####################################################
+
+
+
+#####################################################
+fix 2 atoms_mobile langevin 1.0 1.0 1.0 12315
+fix		1 atoms_mobile nve/limit 0.5
+
+####################################################
+# WALL CONDITIONS
+
+# fix mywall M_Atoms wall/lj93 xlo EDGE 10 10 100 xhi EDGE 10 10 100
+
+####################################################
+
+fix myfixR2 chromatin ave/time 10 100 1000 c_R2[0] file r2.dat
+
+
+# Compute the count of atom types
+compute myTypes all count/type atom
+
+# Define a variable to store the count of atom types
+variable typeA equal c_myTypes[1]
+variable typeU equal c_myTypes[2]
+variable typeM equal c_myTypes[3]
+
+# Output the count of atom types to a file every 1000 steps
+fix myfixTypes all print 1000 "${typeA},${typeU},${typeM}" file types1.dat screen no
+
+variable reactionsIDs1 equal f_4[1]
+variable reactionsIDs2 equal f_4[2]
+variable reactionsIDs3 equal f_4[3]
+variable reactionsIDs4 equal f_4[4]
+
+fix myFixReactions all print 10000 "${reactionsIDs1},${reactionsIDs2},${reactionsIDs3},${reactionsIDs4}," file reactions.dat
+
+####################################################
+dump myDump chromatin custom 1000 id_and_type.dat id type
+#####################################################
+
+
+
+label loopreplication
+    run 2000000
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Your simulation uses code contributions which should be cited:
+
+- fix bond/react: reacter.org doi:10.1016/j.polymer.2017.09.038, doi:10.1021/acs.macromol.0c02012
+
+@Article{Gissinger17,
+ author = {J. R. Gissinger and B. D. Jensen and K. E. Wise},
+ title = {Modeling Chemical Reactions in Classical Molecular Dynamics Simulations},
+ journal = {Polymer},
+ year =    2017,
+ volume =  128,
+ pages =   {211--217}
+}
+
+@Article{Gissinger20,
+ author = {J. R. Gissinger, B. D. Jensen, K. E. Wise},
+ title = {{REACTER}: A Heuristic Method for Reactive Molecular Dynamics},
+ journal = {Macromolecules},
+ year =    2020,
+ volume =  53,
+ number =  22,
+ pages =   {9953--9961}
+}
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Generated 0 of 45 mixed pair_coeff terms from geometric mixing rule
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 10
+  ghost atom cutoff = 10
+  binsize = 5, bins = 100 100 100
+  3 neighbor lists, perpetual/occasional/extra = 1 2 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+  (3) fix bond/react, occasional, copy from (1)
+      attributes: half, newton on
+      pair build: copy
+      stencil: none
+      bin: none
+0,0,0,0,
+Per MPI rank memory allocation (min/avg/max) = 8.678 | 8.754 | 9.05 Mbytes
+---
+keywords: ['Step', 'Temp', 'c_R2[0]', 'f_4[1]', 'f_4[2]', 'f_4[3]', 'f_4[4]', ]
+data:
+  - [1000000, 0.0928319730192174, 29.2710732395759, 0, 0, 0, 0, ]
+1,1,1,1,
+  - [1010000, 0.597039207906147, 28.25021727907, 1, 1, 1, 1, ]
+2,2,2,2,
+  - [1020000, 0.547560458145456, 26.7178820443515, 2, 2, 2, 2, ]
+3,3,3,3,
+  - [1030000, 0.540030744589983, 25.2662657536416, 3, 3, 3, 3, ]
+4,4,4,4,
+  - [1040000, 0.553888792376611, 24.1216980333539, 4, 4, 4, 4, ]
+5,5,5,5,
+  - [1050000, 0.547187370282354, 22.8025955034526, 5, 5, 5, 5, ]
+6,6,6,6,
+  - [1060000, 0.546299042114048, 21.5737887176465, 6, 6, 6, 6, ]
+7,7,7,7,
+  - [1070000, 0.583418585458941, 19.8320964614085, 7, 7, 7, 7, ]
+8,8,8,8,
+  - [1080000, 0.575328733892255, 18.7607182323073, 8, 8, 8, 8, ]
+9,9,9,9,
+  - [1090000, 0.550990387747467, 17.8060357636662, 9, 9, 9, 9, ]
+10,10,10,10,
+  - [1100000, 0.540541104294051, 16.4371765657161, 10, 10, 10, 10, ]
+11,11,11,11,
+  - [1110000, 0.565209260707981, 15.3540892429206, 11, 11, 11, 11, ]
+12,12,12,12,
+  - [1120000, 0.558572407068341, 14.4965437548899, 12, 12, 12, 12, ]
+13,13,13,13,
+  - [1130000, 0.572567100179633, 13.5077095633603, 13, 13, 13, 13, ]
+14,14,14,14,
+  - [1140000, 0.554099971249651, 12.8773812237865, 14, 14, 14, 14, ]
+15,15,15,15,
+  - [1150000, 0.547694871814672, 11.9481311202988, 15, 15, 15, 15, ]
+16,16,16,16,
+  - [1160000, 0.559275778041727, 10.7225830092481, 16, 16, 16, 16, ]
+17,17,17,17,
+  - [1170000, 0.576206483130855, 8.7904829255714, 17, 17, 17, 17, ]
+18,18,18,18,
+  - [1180000, 0.554687965799588, 8.01700871785045, 18, 18, 18, 18, ]
+19,19,19,19,
+  - [1190000, 0.569136507284791, 7.66268939850126, 19, 19, 19, 19, ]
+20,20,20,20,
+  - [1200000, 0.544425953897227, 7.11889405468643, 20, 20, 20, 20, ]
+21,21,21,21,
+  - [1210000, 0.550407853867453, 6.37905506143679, 21, 21, 21, 21, ]
+22,22,22,22,
+  - [1220000, 0.563804961034321, 4.48499565925137, 22, 22, 22, 22, ]
+23,23,23,23,
+  - [1230000, 0.554548138675965, 3.34256033971157, 23, 23, 23, 23, ]
+24,24,24,24,
+  - [1240000, 0.536523853275922, 3.1967486980147, 24, 24, 24, 24, ]
+25,25,25,25,
+  - [1250000, 0.562336947127294, 3.10051707922401, 25, 25, 25, 25, ]
+26,26,26,26,
+  - [1260000, 0.562409001077708, 3.12043945532042, 26, 26, 26, 26, ]
+27,27,27,27,
+  - [1270000, 0.563167354279105, 3.08482616283525, 27, 27, 27, 27, ]
+28,28,28,28,
+  - [1280000, 0.586459461673406, 3.14255966843265, 28, 28, 28, 28, ]
+29,29,29,29,
+  - [1290000, 0.535920710454905, 3.10879855871944, 29, 29, 29, 29, ]
+30,30,30,30,
+  - [1300000, 0.565708764511688, 3.11512510023918, 30, 30, 30, 30, ]
+31,31,31,31,
+  - [1310000, 0.553908812061183, 3.13507720682771, 31, 31, 31, 31, ]
+32,32,32,32,
+  - [1320000, 0.523424704070947, 3.15067764697902, 32, 32, 32, 32, ]
+33,33,33,33,
+  - [1330000, 0.551083777477366, 3.13556842480653, 33, 33, 33, 33, ]
+34,34,34,34,
+  - [1340000, 0.565164317475241, 3.13149883149571, 34, 34, 34, 34, ]
+35,35,35,35,
+  - [1350000, 0.540787164077131, 3.10800383220615, 35, 35, 35, 35, ]
+36,36,36,36,
+  - [1360000, 0.610310356842712, 3.14008763406795, 36, 36, 36, 36, ]
+37,37,37,37,
+  - [1370000, 0.520025407388907, 3.14318510515069, 37, 37, 37, 37, ]
+38,38,38,38,
+  - [1380000, 0.545323702027163, 3.12489185301269, 38, 38, 38, 38, ]
+39,39,39,39,
+  - [1390000, 0.56295697976418, 3.13292445670283, 39, 39, 39, 39, ]
+40,40,40,40,
+  - [1400000, 0.544493743829486, 3.16125337128277, 40, 40, 40, 40, ]
+41,41,41,41,
+  - [1410000, 0.571056866372475, 3.18974204796671, 41, 41, 41, 41, ]
+42,42,42,42,
+  - [1420000, 0.543369450868617, 3.10833441522233, 42, 42, 42, 42, ]
+43,43,43,43,
+  - [1430000, 0.543148701686069, 3.10391282740968, 43, 43, 43, 43, ]
+44,44,44,44,
+  - [1440000, 0.543236593125836, 3.0750785562521, 44, 44, 44, 44, ]
+45,45,45,45,
+  - [1450000, 0.595774834566142, 2.97216535683833, 45, 45, 45, 45, ]
+46,46,46,46,
+  - [1460000, 0.537127241141323, 2.98108204563066, 46, 46, 46, 46, ]
+47,47,47,47,
+  - [1470000, 0.560853910942127, 3.06958907558927, 47, 47, 47, 47, ]
+48,48,48,48,
+  - [1480000, 0.56275818710599, 2.9910429112212, 48, 48, 48, 48, ]
+49,49,49,49,
+  - [1490000, 0.542436863403919, 3.03047429643641, 49, 49, 49, 49, ]
+50,50,50,50,
+  - [1500000, 0.53107809321501, 3.02142855484834, 50, 50, 50, 50, ]
+51,51,51,51,
+  - [1510000, 0.561649588127605, 3.03265466327281, 51, 51, 51, 51, ]
+52,52,52,52,
+  - [1520000, 0.560812198259902, 2.99121508957129, 52, 52, 52, 52, ]
+53,53,53,53,
+  - [1530000, 0.539665018634526, 3.01303541338758, 53, 53, 53, 53, ]
+54,54,54,54,
+  - [1540000, 0.547342856390613, 2.98882900715637, 54, 54, 54, 54, ]
+55,55,55,55,
+  - [1550000, 0.568791821638768, 2.93745653602847, 55, 55, 55, 55, ]
+56,56,56,56,
+  - [1560000, 0.53404798723578, 2.94755427260328, 56, 56, 56, 56, ]
+57,57,57,57,
+  - [1570000, 0.542515072299644, 2.94610944129399, 57, 57, 57, 57, ]
+58,58,58,58,
+  - [1580000, 0.554679236701429, 2.92951566788427, 58, 58, 58, 58, ]
+59,59,59,59,
+  - [1590000, 0.537160528420809, 2.90866115292358, 59, 59, 59, 59, ]
+60,60,60,60,
+  - [1600000, 0.551093558167796, 2.8923370347874, 60, 60, 60, 60, ]
+61,61,61,61,
+  - [1610000, 0.56739787334801, 2.89347444696889, 61, 61, 61, 61, ]
+62,62,62,62,
+  - [1620000, 0.542348346756569, 2.90003012735518, 62, 62, 62, 62, ]
+63,63,63,63,
+  - [1630000, 0.543838075106579, 2.89271544956775, 63, 63, 63, 63, ]
+64,64,64,64,
+  - [1640000, 0.563808809430184, 2.93939035645831, 64, 64, 64, 64, ]
+65,65,65,65,
+  - [1650000, 0.599266313222707, 2.87883312194419, 65, 65, 65, 65, ]
+66,66,66,66,
+  - [1660000, 0.559454772235795, 2.79858775011325, 66, 66, 66, 66, ]
+67,67,67,67,
+  - [1670000, 0.554859128745747, 2.78068929391446, 67, 67, 67, 67, ]
+68,68,68,68,
+  - [1680000, 0.550693539472858, 2.78010940423867, 68, 68, 68, 68, ]
+69,69,69,69,
+  - [1690000, 0.551176299989706, 2.76090794539887, 69, 69, 69, 69, ]
+70,70,70,70,
+  - [1700000, 0.549765652221446, 2.78175831541388, 70, 70, 70, 70, ]
+71,71,71,71,
+  - [1710000, 0.543536457398654, 2.74782813077776, 71, 71, 71, 71, ]
+72,72,72,72,
+  - [1720000, 0.546897660556364, 2.7713999147395, 72, 72, 72, 72, ]
+73,73,73,73,
+  - [1730000, 0.562803149328104, 2.76757767965991, 73, 73, 73, 73, ]
+74,74,74,74,
+  - [1740000, 0.562299118507428, 2.78478190637476, 74, 74, 74, 74, ]
+75,75,75,75,
+  - [1750000, 0.543115216090587, 2.81901394969296, 75, 75, 75, 75, ]
+76,76,76,76,
+  - [1760000, 0.565383690190212, 2.79393313828973, 76, 76, 76, 76, ]
+77,77,77,77,
+  - [1770000, 0.538378080513971, 2.81621711542171, 77, 77, 77, 77, ]
+78,78,78,78,
+  - [1780000, 0.560117955880892, 2.80769171926652, 78, 78, 78, 78, ]
+79,79,79,79,
+  - [1790000, 0.595603513182306, 2.77650962290118, 79, 79, 79, 79, ]
+80,80,80,80,
+  - [1800000, 0.542745922772007, 2.79100521857864, 80, 80, 80, 80, ]
+81,81,81,81,
+  - [1810000, 0.547291185723332, 2.81994916705324, 81, 81, 81, 81, ]
+82,82,82,82,
+  - [1820000, 0.564875933402547, 2.81217578272273, 82, 82, 82, 82, ]
+83,83,83,83,
+  - [1830000, 0.559614729427636, 2.81342964929594, 83, 83, 83, 83, ]
+84,84,84,84,
+  - [1840000, 0.562122493553658, 2.80503597793059, 84, 84, 84, 84, ]
+85,85,85,85,
+  - [1850000, 0.551342416639832, 2.79108160174864, 85, 85, 85, 85, ]
+86,86,86,86,
+  - [1860000, 0.533549752666569, 2.82306659671047, 86, 86, 86, 86, ]
+87,87,87,87,
+  - [1870000, 0.546188552647939, 2.83178279163689, 87, 87, 87, 87, ]
+88,88,88,88,
+  - [1880000, 0.547446198621517, 2.80386420711187, 88, 88, 88, 88, ]
+89,89,89,89,
+  - [1890000, 0.559831849781832, 2.81001996554289, 89, 89, 89, 89, ]
+90,90,90,90,
+  - [1900000, 0.53627268890321, 2.77053498586385, 90, 90, 90, 90, ]
+91,91,91,91,
+  - [1910000, 0.557457287879776, 2.72520925430548, 91, 91, 91, 91, ]
+92,92,92,92,
+  - [1920000, 0.551597657011047, 2.75297819893936, 92, 92, 92, 92, ]
+93,93,93,93,
+  - [1930000, 0.573039639727286, 2.72081627558969, 93, 93, 93, 93, ]
+94,94,94,94,
+  - [1940000, 0.568715616200605, 2.75438184262006, 94, 94, 94, 94, ]
+95,95,95,95,
+  - [1950000, 0.548606928966239, 2.7015193674544, 95, 95, 95, 95, ]
+96,96,96,96,
+  - [1960000, 0.549628575692445, 2.72604858683768, 96, 96, 96, 96, ]
+97,97,97,97,
+  - [1970000, 0.862826395853181, 2.98782345397505, 97, 97, 97, 97, ]
+98,98,98,98,
+  - [1980000, 0.561096812999896, 2.72950923369211, 98, 98, 98, 98, ]
+99,99,99,99,
+  - [1990000, 0.566088534236372, 2.75272232282353, 99, 99, 99, 99, ]
+100,100,100,100,
+  - [2000000, 0.537383026062021, 2.77435795650678, 100, 100, 100, 100, ]
+101,101,101,101,
+  - [2010000, 0.561627619105768, 2.74060172740311, 101, 101, 101, 101, ]
+102,102,102,102,
+  - [2020000, 0.5388425204299, 2.72109726651465, 102, 102, 102, 102, ]
+103,103,103,103,
+  - [2030000, 0.546714551229949, 2.75796980509916, 103, 103, 103, 103, ]
+104,104,104,104,
+  - [2040000, 0.546030040100386, 2.72795923347365, 104, 104, 104, 104, ]
+105,105,105,105,
+  - [2050000, 0.554769560482274, 2.69720770334945, 105, 105, 105, 105, ]
+106,106,106,106,
+  - [2060000, 0.527283517193827, 2.71882699741232, 106, 106, 106, 106, ]
+107,107,107,107,
+  - [2070000, 0.575008057741358, 2.71588081238102, 107, 107, 107, 107, ]
+108,108,108,108,
+  - [2080000, 0.545236019120866, 2.76644243949459, 108, 108, 108, 108, ]
+109,109,109,109,
+  - [2090000, 0.571962938507299, 2.76969940434778, 109, 109, 109, 109, ]
+110,110,110,110,
+  - [2100000, 0.543007131857961, 2.77540656288602, 110, 110, 110, 110, ]
+111,111,111,111,
+  - [2110000, 0.547291387928406, 2.74659495659462, 111, 111, 111, 111, ]
+112,112,112,112,
+  - [2120000, 0.547425806308821, 2.75656103442642, 112, 112, 112, 112, ]
+113,113,113,113,
+  - [2130000, 0.554502758063892, 2.74001310554085, 113, 113, 113, 113, ]
+114,114,114,114,
+  - [2140000, 0.556913280314045, 2.75117896123011, 114, 114, 114, 114, ]
+115,115,115,115,
+  - [2150000, 0.528272127471076, 2.76137549589517, 115, 115, 115, 115, ]
+116,116,116,116,
+  - [2160000, 0.553282448546479, 2.71579064901479, 116, 116, 116, 116, ]
+117,117,117,117,
+  - [2170000, 0.575101071142443, 2.75208408000351, 117, 117, 117, 117, ]
+118,118,118,118,
+  - [2180000, 0.564211783792469, 2.73377792924203, 118, 118, 118, 118, ]
+119,119,119,119,
+  - [2190000, 0.532714519655837, 2.69770562416378, 119, 119, 119, 119, ]
+120,120,120,120,
+  - [2200000, 0.56954016042499, 2.70138876203591, 120, 120, 120, 120, ]
+121,121,121,121,
+  - [2210000, 0.533307162801223, 2.7468082764865, 121, 121, 121, 121, ]
+122,122,122,122,
+  - [2220000, 0.543592759875007, 2.71531850013003, 122, 122, 122, 122, ]
+123,123,123,123,
+  - [2230000, 0.551853389540442, 2.71953918006358, 123, 123, 123, 123, ]
+124,124,124,124,
+  - [2240

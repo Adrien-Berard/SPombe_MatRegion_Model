@@ -1,0 +1,151 @@
+LAMMPS (17 Apr 2024)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+#package gpu 1 split 0.75
+# VARIABLES
+variable fname index InitialFile.txt
+variable simname index InitialFile
+
+# Initialization
+units		lj
+boundary	    p p p
+atom_style	molecular
+
+# read_restart	restart.equil
+read_data InitialFile.txt extra/bond/per/atom 5 extra/special/per/atom 5
+Reading data file ...
+  orthogonal box = (0 0 0) to (200 200 200)
+  1 by 2 by 5 MPI processor grid
+  reading atom labelmap ...
+  reading atoms ...
+  10000 atoms
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     0 = max # of 1-2 neighbors
+     0 = max # of 1-3 neighbors
+     0 = max # of 1-4 neighbors
+     6 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+  read_data CPU = 0.015 seconds
+
+# Dreiding potential information
+neighbor	2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+# Define morse potentials D - alpha - r0
+pair_style	morse 8.0 # Cutoff
+pair_coeff	* * 6 2 2.0 # Define all pair coeff to be like that
+
+
+
+
+#####################################################
+# Swi 6 group
+
+group swi6 type 1
+10000 atoms in group swi6
+group atoms_mobile type 1
+10000 atoms in group atoms_mobile
+#####################################################
+
+
+#####################################################
+# set timestep of integrator
+
+timestep 0.01
+
+
+#####################################################
+# Equilibration
+
+velocity 	all create 1.0 12315
+fix		1 all nve/limit 0.5
+fix 2 all langevin 1.0 1.0 1.0 12315
+thermo_style	custom step temp
+thermo          10000
+
+
+# write_restart restart.equil
+# Not necessary anymore to have a restart file as it is already loaded
+
+#####################################################
+
+
+dump mydmp all atom 1000 dump.lammpstrj
+
+timestep 0.001
+#####################################################
+
+
+
+#####################################################
+fix 2 all langevin 1.0 1.0 1.0 12315
+fix		1 all nve/limit 0.5
+
+
+
+####################################################
+# Compute the density of Swi6
+group typeSwi6 type 1
+10000 atoms in group typeSwi6
+
+compute myChunks all chunk/atom bin/2d x lower 2 y lower 2 units box
+
+fix myDensityCount all ave/chunk 10000 1 10000 myChunks density/number file density2d.profile ave running
+
+
+####################################################
+# Compute the MSD of Swi6 chunks
+compute myChunksMSD all chunk/atom bin/2d x lower 2 y lower 2 units box ids once
+
+compute myMSDChunk all msd/chunk myChunksMSD
+
+
+fix myFixMSD all ave/time 10000 1 10000 c_myMSDChunk[*] file msd.out mode vector
+
+####################################################
+# Compute the MSD of Swi6 atoms
+compute myMSD all msd
+
+fix myFixMSD2 all ave/time 10000 1 10000 c_myMSD[1] c_myMSD[2] c_myMSD[3] c_myMSD[4] file msd_swi6.txt
+
+run 10000000
+Generated 0 of 0 mixed pair_coeff terms from geometric mixing rule
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 10
+  ghost atom cutoff = 10
+  binsize = 5, bins = 40 40 40
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 9.692 | 9.696 | 9.7 Mbytes
+   Step          Temp     
+         0   1            
+     10000   1.0860279    
+     20000   1.068685     
+     30000   1.049333     
+     40000   1.0526164    
+     50000   1.0362293    
+     60000   1.0257586    
+     70000   1.016122     
+     80000   1.0464984    
+     90000   1.0161882    
+    100000   1.0114316    
+    110000   1.0088944    
+    120000   1.0197746    
+    130000   1.0134549    
+    140000   1.0188243    
+    150000   1.0155353    
+    160000   1.0116274    
+    170000   1.0102596    
+    180000   1.0115965    
+    190000   1.0159829    
+    200000   0.99363863   
+    210000   1.0070996    
+    22

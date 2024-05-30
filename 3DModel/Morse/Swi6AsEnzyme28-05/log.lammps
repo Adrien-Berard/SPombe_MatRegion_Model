@@ -1,0 +1,438 @@
+LAMMPS (17 Apr 2024)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+#package gpu 1 split 0.75
+# VARIABLES
+variable fname index InitialFile.txt
+variable simname index InitialFile
+
+# Initialization
+units		lj
+boundary	    p p p
+atom_style	molecular
+
+# read_restart	restart.equil
+read_data InitialFile.txt extra/bond/per/atom 5 extra/special/per/atom 5
+Reading data file ...
+  orthogonal box = (0 0 0) to (200 200 200)
+  1 by 2 by 5 MPI processor grid
+  reading atom labelmap ...
+  reading bond labelmap ...
+  reading angle labelmap ...
+  reading dihedral labelmap ...
+  reading atoms ...
+  2200 atoms
+  scanning bonds ...
+  6 = max bonds/atom
+  scanning angles ...
+  1 = max angles/atom
+  scanning dihedrals ...
+  1 = max dihedrals/atom
+  orthogonal box = (0 0 0) to (200 200 200)
+  1 by 2 by 5 MPI processor grid
+  reading bonds ...
+  199 bonds
+  reading angles ...
+  198 angles
+  reading dihedrals ...
+  197 dihedrals
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     2 = max # of 1-2 neighbors
+     2 = max # of 1-3 neighbors
+     4 = max # of 1-4 neighbors
+    11 = max # of special neighbors
+  special bonds CPU = 0.001 seconds
+  read_data CPU = 0.013 seconds
+
+# Dreiding potential information
+neighbor	2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+# Define the bond potential
+# Type - Energy - Equilibrium bond length
+bond_style      harmonic
+bond_coeff	Normal 1000 1
+special_bonds lj/coul 0.0 0.0 0.5
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0.5     
+  special bond factors coul:  0        0        0.5     
+     2 = max # of 1-2 neighbors
+     2 = max # of 1-3 neighbors
+     4 = max # of 1-4 neighbors
+    11 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+
+angle_style harmonic
+angle_coeff Normal 20 120
+
+dihedral_style harmonic
+dihedral_coeff Normal 2 1 1
+
+# Define morse potentials D - alpha - r0
+pair_style	morse 8.0 # Cutoff
+pair_coeff	* * 2 2 2.0 # Define all pair coeff to be like that
+pair_coeff M M 2 2 1.0 # Define M-M pair coeff
+pair_coeff HP M 2 2 2.0
+pair_coeff HP HP 2 2 2.0
+
+# Pair coeff for HP1
+pair_coeff HP A 0 2 2.0
+pair_coeff HP U 0 2 2.0
+
+
+
+#####################################################
+# Chromatin, CenH Region, Promoter and Transcription
+
+group chromatin type 1 2 3
+200 atoms in group chromatin
+group Mtype type 3
+50 atoms in group Mtype
+
+group cenH id 61:90
+30 atoms in group cenH
+group promoter id 120 121 122
+3 atoms in group promoter
+group promo_and_poly union promoter
+3 atoms in group promo_and_poly
+group yfp id 123:130
+8 atoms in group yfp
+group mcherry id 150:155
+6 atoms in group mcherry
+group outOFCenH subtract chromatin cenH
+170 atoms in group outOFCenH
+group M_Atoms type 3
+50 atoms in group M_Atoms
+group NotPromoter subtract chromatin promoter
+197 atoms in group NotPromoter
+group TranscriptionReactionGroup union yfp mcherry
+14 atoms in group TranscriptionReactionGroup
+
+group swi6 type 4
+2000 atoms in group swi6
+group atoms_mobile type 1 2 3 4
+2200 atoms in group atoms_mobile
+#####################################################
+
+
+#####################################################
+# set timestep of integrator
+
+timestep 0.01
+
+#####################################################
+# Compute properties
+compute R2 chromatin gyration
+
+# Compute coordination number of N atoms around each atom
+compute coordMtype Mtype coord/atom cutoff 2.0 group Mtype
+
+# Define an atom-style variable to store the coordination number
+variable my_coord atom c_coordMtype
+
+#compute pe chromatin pe
+
+#####################################################
+# Equilibration
+
+velocity 	atoms_mobile create 1.0 12315
+fix		1 atoms_mobile nve/limit 0.5
+fix 2 atoms_mobile langevin 1.0 1.0 1.0 12315
+thermo_style	custom step temp
+thermo          10000
+
+
+run		100000
+Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 10
+  ghost atom cutoff = 10
+  binsize = 5, bins = 40 40 40
+  2 neighbor lists, perpetual/occasional/extra = 1 1 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 8.537 | 8.721 | 8.996 Mbytes
+   Step          Temp     
+         0   1            
+     10000   1.0096082    
+     20000   1.0066008    
+     30000   1.0305173    
+     40000   0.97899344   
+     50000   0.98681422   
+     60000   0.97986175   
+     70000   0.97638055   
+     80000   0.97667294   
+     90000   0.96796033   
+    100000   1.0191967    
+Loop time of 36.891 on 10 procs for 100000 steps with 2200 atoms
+
+Performance: 2342036.549 tau/day, 2710.690 timesteps/s, 5.964 Matom-step/s
+99.9% CPU use with 10 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.27323    | 3.9387     | 31.028     | 461.2 | 10.68
+Bond    | 0.0095587  | 0.18811    | 1.3129     |  88.9 |  0.51
+Neigh   | 0.86715    | 0.86936    | 0.87189    |   0.2 |  2.36
+Comm    | 1.5638     | 23.505     | 33.76      | 296.3 | 63.72
+Output  | 0.0001342  | 0.00089921 | 0.0038501  |   0.0 |  0.00
+Modify  | 0.83526    | 0.94644    | 1.4469     |  17.5 |  2.57
+Other   |            | 7.442      |            |       | 20.17
+
+Nlocal:            220 ave         419 max         172 min
+Histogram: 5 3 1 0 0 0 0 0 0 1
+Nghost:          212.9 ave         439 max         161 min
+Histogram: 4 5 0 0 0 0 0 0 0 1
+Neighs:         2926.3 ave       28193 max          87 min
+Histogram: 9 0 0 0 0 0 0 0 0 1
+FullNghs:            0 ave           0 max           0 min
+Histogram: 10 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 29263
+Ave neighs/atom = 13.301364
+Ave special neighs/atom = 0.54
+Neighbor list builds = 4141
+Dangerous builds = 0
+
+write_restart restart.equil
+System init for write_restart ...
+Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
+# Not necessary anymore to have a restart file as it is already loaded
+
+#####################################################
+
+
+dump mydmp all atom 1000 dump.lammpstrj
+
+timestep 0.001
+#####################################################
+molecule AM_post AM_post-reaction.template
+Read molecule template AM_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AM_pre AM_pre-reaction.template
+Read molecule template AM_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AU_post AU_post-reaction.template
+Read molecule template AU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 1
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AU_pre AU_pre-reaction.template
+Read molecule template AU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MA_post MA_post-reaction.template
+Read molecule template MA_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 4
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MA_pre MA_pre-reaction.template
+Read molecule template MA_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 4
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MU_post MU_post-reaction.template
+Read molecule template MU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MU_pre MU_pre-reaction.template
+Read molecule template MU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+
+
+#####################################################
+# Do the reactions
+
+fix 4 all bond/react      react reacAU chromatin 1 0 2 AM_pre AM_post simple.map rate_limit 1 1e4 molecule intra       react reacMU chromatin 1 0 2 AU_pre AU_post simple.map rate_limit 1 1e4  molecule intra       react reacUA chromatin 1 0 2 MA_pre MA_post simpleAU.map rate_limit 1 1e4  molecule inter       react reacUM chromatin 1 0 2 MU_pre MU_post simple.map rate_limit 1 1e4  molecule intra      #react reacUnactivationPoly promo_and_poly 1 0 2 UnactivationPoly_pre UnactivationPoly_post UnactivationPoly.map molecule inter prob 1e-1  3519
+dynamic group bond_react_MASTER_group defined
+    #react reacUMcenH cenH 1 0 2 MU_pre MU_post simple.map molecule intra prob 1e-4 3890     #react reacUAcenH cenH 1 0 2 MA_pre MA_post simple.map molecule intra prob 1e-4  2866     #react reacTranscription1 TranscriptionReactionGroup 1 0 3 Transcription_MU_pre Transcription_MU_post transcription_2steps.map molecule inter prob 1e-1  254     #react reacTranscription2 TranscriptionReactionGroup 1 0 3 Transcription_UA_pre Transcription_UA_post transcription_2steps.map molecule inter prob 1e-1  8902     #react reacReactivationPolyA chromatin_and_poly 1 0 2 ReactivationPoly_A_pre ReactivationPoly_A_post ReactivationPoly.map molecule inter prob 1e-3  254     #react reacReactivationPolyU chromatin_and_poly 1 0 2 ReactivationPoly_U_pre ReactivationPoly_U_post ReactivationPoly.map molecule inter prob 1e-3  890
+
+
+#####################################################
+
+thermo_style custom step temp c_R2[0] f_4[1] f_4[2] f_4[3] f_4[4]
+thermo_modify line yaml
+thermo 10000
+#####################################################
+
+
+
+#####################################################
+fix 2 atoms_mobile langevin 1.0 1.0 1.0 12315
+fix		1 atoms_mobile nve/limit 0.5
+
+####################################################
+# WALL CONDITIONS
+
+# fix mywall M_Atoms wall/lj93 xlo EDGE 10 10 100 xhi EDGE 10 10 100
+
+####################################################
+
+fix myfixR2 chromatin ave/time 10 100 1000 c_R2[0] file r2.dat
+
+####################################################
+# Compute the count of atom types
+group typeA type 1
+72 atoms in group typeA
+group typeU type 2
+78 atoms in group typeU
+group typeM type 3
+50 atoms in group typeM
+variable count_typeA equal count(typeA)
+variable count_typeU equal count(typeU)
+variable count_typeM equal count(typeM)
+fix myTypeCounts all print 10000 "${count_typeA},${count_typeU},${count_typeU}," file typesCount.dat screen no
+
+####################################################
+# Count reactions
+
+variable reactionsIDs1 equal f_4[1]
+variable reactionsIDs2 equal f_4[2]
+variable reactionsIDs3 equal f_4[3]
+variable reactionsIDs4 equal f_4[4]
+
+fix myFixReactions all print 10000 "${reactionsIDs1},${reactionsIDs2},${reactionsIDs3},${reactionsIDs4}," file reactions.dat screen no
+
+####################################################
+dump myDump chromatin custom 10000 id_and_type.dat id type
+#####################################################
+
+####################################################
+# Compute the density of Swi6
+group typeSwi6 type 4
+2000 atoms in group typeSwi6
+
+compute myChunks all chunk/atom bin/2d x lower 2 y lower 2 units box
+
+fix myDensityCount typeSwi6 ave/chunk 10000 1 10000 myChunks density/number file density2d.profile ave running
+
+
+####################################################
+# Compute the MSD of Swi6 chunks
+compute myChunksMSD all chunk/atom bin/2d x lower 2 y lower 2 units box ids once
+
+compute myMSDChunk typeSwi6 msd/chunk myChunksMSD
+
+
+fix myFixMSD all ave/time 10000 1 10000 c_myMSDChunk[*] file msd.out mode vector
+
+####################################################
+label loopreplication
+    run 4000000
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Your simulation uses code contributions which should be cited:
+
+- fix bond/react: reacter.org doi:10.1016/j.polymer.2017.09.038, doi:10.1021/acs.macromol.0c02012
+
+@Article{Gissinger17,
+ author = {J. R. Gissinger and B. D. Jensen and K. E. Wise},
+ title = {Modeling Chemical Reactions in Classical Molecular Dynamics Simulations},
+ journal = {Polymer},
+ year =    2017,
+ volume =  128,
+ pages =   {211--217}
+}
+
+@Article{Gissinger20,
+ author = {J. R. Gissinger, B. D. Jensen, K. E. Wise},
+ title = {{REACTER}: A Heuristic Method for Reactive Molecular Dynamics},
+ journal = {Macromolecules},
+ year =    2020,
+ volume =  53,
+ number =  22,
+ pages =   {9953--9961}
+}
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 10
+  ghost atom cutoff = 10
+  binsize = 5, bins = 40 40 40
+  3 neighbor lists, perpetual/occasional/extra = 1 2 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+  (3) fix bond/react, occasional, copy from (1)
+      attributes: half, newton on
+      pair build: copy
+      stencil: none
+      bin: none
+Per MPI rank memory allocation (min/avg/max) = 11.18 | 11.46 | 11.68 Mbytes
+---
+keywords: ['Step', 'Temp', 'c_R2[0]', 'f_4[1]', 'f_4[2]', 'f_4[3]', 'f_4[4]', ]
+data:
+  - [100000, 1.01919665346486, 3.6883

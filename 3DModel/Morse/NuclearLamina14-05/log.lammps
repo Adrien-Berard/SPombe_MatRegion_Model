@@ -1,0 +1,2456 @@
+LAMMPS (7 Feb 2024 - Update 1)
+#package gpu 1 split 0.75
+# VARIABLES
+variable fname index InitialFile.txt
+variable simname index InitialFile
+
+# Initialization
+units		lj
+boundary	    p p p
+atom_style	bond
+
+# read_restart	restart.equil
+read_data InitialFile.txt extra/bond/per/atom 5 extra/special/per/atom 5
+Reading data file ...
+  orthogonal box = (0 0 0) to (500 500 500)
+  1 by 1 by 1 MPI processor grid
+  reading atom labelmap ...
+  reading bond labelmap ...
+  reading atoms ...
+  2210 atoms
+  scanning bonds ...
+  16 = max bonds/atom
+  reading bonds ...
+  229 bonds
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+    12 = max # of 1-2 neighbors
+    42 = max # of 1-3 neighbors
+   304 = max # of 1-4 neighbors
+    21 = max # of special neighbors
+  special bonds CPU = 0.002 seconds
+  read_data CPU = 0.013 seconds
+
+# Dreiding potential information
+neighbor	2.0 bin
+neigh_modify every 1 delay 0 check yes
+
+# Define the bond potential
+# Type - Energy - Equilibrium bond length
+bond_style      harmonic
+bond_coeff	Normal 30 1
+bond_coeff	MM 30 1
+bond_coeff  PolyPromoter 30 4
+special_bonds lj/coul 0.0 0.0 0.5
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0.5     
+  special bond factors coul:  0        0        0.5     
+    12 = max # of 1-2 neighbors
+    42 = max # of 1-3 neighbors
+   304 = max # of 1-4 neighbors
+    21 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+
+# Define morse potentials D - alpha - r0
+pair_style	morse 5.0 # Cutoff
+pair_coeff	* * 5e-2 2 1.5 # Define all pair coeff to be like that
+pair_coeff M M 5e-2 2 1.0 # Define M-M pair coeff
+pair_coeff A N 5e-2 2 4.0
+pair_coeff U N 5e-2 2 4.0
+pair_coeff M N 5e-2 2 2.0   # Preference of the nucleus for the heterochromatin
+
+# Pair coeff for HP1
+pair_coeff HP A 0 2 2.0
+pair_coeff HP U 0 2 2.0
+pair_coeff HP N 1e-4 2 2.0
+pair_coeff HP NA 0 2 2.0
+pair_coeff HP NU 0 2 2.0
+pair_coeff HP NM 0 2 2.0
+pair_coeff HP M 5e-2 2 2.0
+pair_coeff HP HP 5 2 2.0
+
+
+#####################################################
+# Chromatin, CenH Region, Promoter and Transcription
+
+group chromatin type 1 2 3
+200 atoms in group chromatin
+group Mtype type 3
+65 atoms in group Mtype
+group chromatin_and_poly type 1 2 3 5
+210 atoms in group chromatin_and_poly
+group polymerases type 5
+10 atoms in group polymerases
+group nucleus type 4
+1000 atoms in group nucleus
+group cenH id 61:90
+30 atoms in group cenH
+group promoter id 120 121 122
+3 atoms in group promoter
+group promo_and_poly union promoter polymerases
+13 atoms in group promo_and_poly
+group yfp id 123:130
+8 atoms in group yfp
+group mcherry id 150:155
+6 atoms in group mcherry
+group outOFCenH subtract chromatin cenH
+170 atoms in group outOFCenH
+group M_Atoms type 3
+65 atoms in group M_Atoms
+group NotPromoter subtract chromatin promoter
+197 atoms in group NotPromoter
+group TranscriptionReactionGroup union yfp mcherry polymerases
+24 atoms in group TranscriptionReactionGroup
+group nucleus_and_hetero type 3 4
+1065 atoms in group nucleus_and_hetero
+group hp1 type 10
+1000 atoms in group hp1
+group atoms_mobile type 1 2 3 5 10
+1210 atoms in group atoms_mobile
+#####################################################
+
+
+#####################################################
+# set timestep of integrator
+
+timestep 0.01
+
+#####################################################
+# Compute properties
+compute R2 chromatin gyration
+
+# Compute coordination number of N atoms around each atom
+compute coordMtype Mtype coord/atom cutoff 2.0 group Mtype
+
+# Define an atom-style variable to store the coordination number
+variable my_coord atom c_coordMtype
+
+#compute pe chromatin pe
+
+#####################################################
+# Equilibration (Brownian dynamics at 300 K)
+
+# Not necessary anymore as it is already equilibrated
+
+velocity 	chromatin_and_poly create 1.0 12315
+fix		1 chromatin_and_poly nve/limit 0.5
+fix 2 atoms_mobile langevin 1.0 1.0 1.0 12315
+thermo_style	custom step temp
+thermo          10000
+
+
+run		100000
+Generated 0 of 45 mixed pair_coeff terms from geometric mixing rule
+WARNING: Communication cutoff 7 is shorter than a bond length based estimate of 8. This may lead to errors. (src/comm.cpp:723)
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7
+  ghost atom cutoff = 7
+  binsize = 3.5, bins = 143 143 143
+  2 neighbor lists, perpetual/occasional/extra = 1 1 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+WARNING: Communication cutoff 7 is shorter than a bond length based estimate of 8. This may lead to errors. (src/comm.cpp:723)
+Per MPI rank memory allocation (min/avg/max) = 20.22 | 20.22 | 20.22 Mbytes
+   Step          Temp     
+         0   0.094612947  
+     10000   0.095198463  
+     20000   0.085051557  
+     30000   0.093339031  
+     40000   0.092244741  
+     50000   0.10335442   
+     60000   0.10245954   
+     70000   0.095874332  
+     80000   0.095684631  
+     90000   0.098628901  
+    100000   0.097843554  
+Loop time of 23.8384 on 1 procs for 100000 steps with 2210 atoms
+
+Performance: 3624396.810 tau/day, 4194.904 timesteps/s, 9.271 Matom-step/s
+93.7% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 12.732     | 12.732     | 12.732     |   0.0 | 53.41
+Bond    | 0.29419    | 0.29419    | 0.29419    |   0.0 |  1.23
+Neigh   | 6.4412     | 6.4412     | 6.4412     |   0.0 | 27.02
+Comm    | 0.52103    | 0.52103    | 0.52103    |   0.0 |  2.19
+Output  | 0.00027262 | 0.00027262 | 0.00027262 |   0.0 |  0.00
+Modify  | 3.2073     | 3.2073     | 3.2073     |   0.0 | 13.45
+Other   |            | 0.6423     |            |       |  2.69
+
+Nlocal:           2210 ave        2210 max        2210 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:             88 ave          88 max          88 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:           7640 ave        7640 max        7640 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:            0 ave           0 max           0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 7640
+Ave neighs/atom = 3.4570136
+Ave special neighs/atom = 0.64162896
+Neighbor list builds = 3191
+Dangerous builds = 0
+
+write_restart restart.equil
+System init for write_restart ...
+Generated 0 of 45 mixed pair_coeff terms from geometric mixing rule
+WARNING: Communication cutoff 7 is shorter than a bond length based estimate of 8. This may lead to errors. (src/comm.cpp:723)
+# Not necessary anymore to have a restart file as it is already loaded
+
+#####################################################
+
+
+dump mydmp all atom 500 dump.lammpstrj
+
+timestep 0.001
+
+#####################################################
+molecule AM_post AM_post-reaction.template
+Read molecule template AM_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AM_pre AM_pre-reaction.template
+Read molecule template AM_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AU_post AU_post-reaction.template
+Read molecule template AU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 1
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule AU_pre AU_pre-reaction.template
+Read molecule template AU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MA_post MA_post-reaction.template
+Read molecule template MA_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MA_pre MA_pre-reaction.template
+Read molecule template MA_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MU_post MU_post-reaction.template
+Read molecule template MU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule MU_pre MU_pre-reaction.template
+Read molecule template MU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+
+molecule Transcription_MU_post Transcription_post-reaction_MU.template
+Read molecule template Transcription_MU_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule Transcription_MU_pre Transcription_pre-reaction_MU.template
+Read molecule template Transcription_MU_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule Transcription_UA_post Transcription_post-reaction_UA.template
+Read molecule template Transcription_UA_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule Transcription_UA_pre Transcription_pre-reaction_UA.template
+Read molecule template Transcription_UA_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule UnactivationPoly_post UnactivationPoly_post-reaction.template
+Read molecule template UnactivationPoly_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  4 atoms with max type 6
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule UnactivationPoly_pre UnactivationPoly_pre-reaction.template
+Read molecule template UnactivationPoly_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  4 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_A_pre ReactivationPoly_A_pre-reaction.template
+Read molecule template ReactivationPoly_A_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 6
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_A_post ReactivationPoly_A_post-reaction.template
+Read molecule template ReactivationPoly_A_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_U_pre ReactivationPoly_U_pre-reaction.template
+Read molecule template ReactivationPoly_U_pre:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 6
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+molecule ReactivationPoly_U_post ReactivationPoly_U_post-reaction.template
+Read molecule template ReactivationPoly_U_post:
+# This is a molecule template
+  1 molecules
+  0 fragments
+  2 atoms with max type 5
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+
+
+#####################################################
+# Do the reactions
+fix 4 all bond/react      react reacUMcenH cenH 1 0 2 MU_pre MU_post simple.map molecule intra prob 1e-4 3890     react reacUAcenH cenH 1 0 2 MA_pre MA_post simple.map molecule intra prob 1e-4  2866     react reacAU chromatin 1 0 2 AM_pre AM_post simple.map molecule intra prob 1e-5 1390     react reacMU chromatin 1 0 2 AU_pre AU_post simple.map molecule intra prob 1e-5 389     react reacUA chromatin 1 0 2 MA_pre MA_post simple.map molecule intra prob 1e-5 3890     react reacUM chromatin 1 0 2 MU_pre MU_post simple.map molecule intra prob 1e-5  2866     react reacUnactivationPoly promo_and_poly 1 0 2 UnactivationPoly_pre UnactivationPoly_post UnactivationPoly.map molecule inter prob 1e-1  3519     react reacTranscription1 TranscriptionReactionGroup 1 0 3 Transcription_MU_pre Transcription_MU_post transcription_2steps.map molecule inter prob 1e-1  254     react reacTranscription2 TranscriptionReactionGroup 1 0 3 Transcription_UA_pre Transcription_UA_post transcription_2steps.map molecule inter prob 1e-1  8902     react reacReactivationPolyA chromatin_and_poly 1 0 2 ReactivationPoly_A_pre ReactivationPoly_A_post ReactivationPoly.map molecule inter prob 1e-3  254     react reacReactivationPolyU chromatin_and_poly 1 0 2 ReactivationPoly_U_pre ReactivationPoly_U_post ReactivationPoly.map molecule inter prob 1e-3  890
+dynamic group bond_react_MASTER_group defined
+
+
+#####################################################
+
+thermo_style custom step temp c_R2[0] f_4[1] f_4[2] f_4[3] f_4[4] f_4[5] f_4[6] f_4[7] f_4[8] f_4[9] f_4[10] f_4[11]
+thermo 10000
+
+fix		1 atoms_mobile nve/limit 0.5
+WARNING: Replacing a fix, but new group != old group (src/modify.cpp:873)
+
+####################################################
+# WALL CONDITIONS
+
+# fix mywall M_Atoms wall/lj93 xlo EDGE 10 10 100 xhi EDGE 10 10 100
+
+####################################################
+
+fix myfixR2 chromatin ave/time 10 100 1000 c_R2[0] file r2.dat
+
+
+# Compute the count of atom types
+compute myTypes all count/type atom
+
+# Define a variable to store the count of atom types
+variable typeA equal c_myTypes[1]
+variable typeU equal c_myTypes[2]
+variable typeM equal c_myTypes[3]
+
+# Output the count of atom types to a file every 1000 steps
+fix myfixTypes all print 1000 "${typeA},${typeU},${typeM}" file types1.dat screen no
+
+
+
+
+####################################################
+dump myDump chromatin custom 1000 id_and_type.dat id type
+#####################################################
+
+
+
+label loopreplication
+    run 2000000
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Your simulation uses code contributions which should be cited:
+
+- fix bond/react: reacter.org doi:10.1016/j.polymer.2017.09.038, doi:10.1021/acs.macromol.0c02012
+
+@Article{Gissinger17,
+ author = {J. R. Gissinger and B. D. Jensen and K. E. Wise},
+ title = {Modeling Chemical Reactions in Classical Molecular Dynamics Simulations},
+ journal = {Polymer},
+ year =    2017,
+ volume =  128,
+ pages =   {211--217}
+}
+
+@Article{Gissinger20,
+ author = {J. R. Gissinger, B. D. Jensen, K. E. Wise},
+ title = {{REACTER}: A Heuristic Method for Reactive Molecular Dynamics},
+ journal = {Macromolecules},
+ year =    2020,
+ volume =  53,
+ number =  22,
+ pages =   {9953--9961}
+}
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Generated 0 of 45 mixed pair_coeff terms from geometric mixing rule
+WARNING: Communication cutoff 7 is shorter than a bond length based estimate of 8. This may lead to errors. (src/comm.cpp:723)
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7
+  ghost atom cutoff = 7
+  binsize = 3.5, bins = 143 143 143
+  3 neighbor lists, perpetual/occasional/extra = 1 2 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+  (3) fix bond/react, occasional, copy from (1)
+      attributes: half, newton on
+      pair build: copy
+      stencil: none
+      bin: none
+WARNING: Communication cutoff 7 is shorter than a bond length based estimate of 8. This may lead to errors. (src/comm.cpp:723)
+Per MPI rank memory allocation (min/avg/max) = 20.53 | 20.53 | 20.53 Mbytes
+   Step          Temp         c_R2[0]         f_4[1]         f_4[2]         f_4[3]         f_4[4]         f_4[5]         f_4[6]         f_4[7]         f_4[8]         f_4[9]        f_4[10]        f_4[11]    
+    100000   0.097843554    21.334779      0              0              0              0              0              0              0              0              0              0              0            
+    110000   0.55904283     20.970023      2              0              3              2              2              3              0              0              0              0              0            
+    120000   0.5403609      21.04517       5              3              3              5              3              3              0              0              0              0              0            
+    130000   0.53733492     20.610154      7              6              5              6              3              4              0              0              0              0              0            
+    140000   0.54709918     20.329854      13             9              6              8              5              5              0              0              0              0              0            
+    150000   0.57465989     20.197461      13             10             8              10             7              5              0              0              0              0              0            
+    160000   0.54989367     19.993485      16             10             12             11             9              9              0              0              0              0              0            
+    170000   0.55720191     19.539081      16             12             12             15             11             13             0              0              0              0              0            
+    180000   0.53130391     19.52958       20             13             15             16             11             15             0              0              0              0              0            
+    190000   0.5568129      19.927263      20             13             17             16             13             17             0              0              0              0              0            
+    200000   0.56339198     19.432981      21             13             18             17             14             19             0              0              0              0              0            
+    210000   0.52280683     19.363265      23             13             18             18             15             19             0              0              0              0              0            
+    220000   0.58145688     19.093543      23             13             20             21             16             20             0              0              0              0              0            
+    230000   0.52178101     19.315247      23             13             26             22             16             23             0              0              0              0              0            
+    240000   0.56203144     19.414095      23             13             28             23             18             23             0              0              0              0              0            
+    250000   0.56026575     19.265196      23             13             28             25             20             24             0              0              1              0              0            
+    260000   0.57319271     19.002426      23             13             29             26             24             26             0              0              1              0              0            
+    270000   0.55219356     19.173894      23             13             29             28             26             26             0              0              1              0              0            
+    280000   0.53207114     19.250241      24             13             30             28             29             27             0              0              1              0              0            
+    290000   0.55476939     19.249433      24             13             30             30             30             28             0              1              1              0              0            
+    300000   0.56385558     19.431007      24             13             32             32             30             29             0              1              1              0              0            
+    310000   0.55309662     18.947405      26             13             32             32             31             31             0              1              1              0              0            
+    320000   0.53422501     19.097872      26             13             32             32             32             35             0              1              1              0              0            
+    330000   0.54913602     19.576932      26             13             34             33             33             37             0              1              1              0              0            
+    340000   0.54671142     19.478616      26             13             36             35             33             40             0              1              1              0              0            
+    350000   0.5315039      19.36276       26             13             38             38             33             40             0              1              1              0              0            
+    360000   0.53127097     19.117525      26             13             39             43             35             40             0              1              1              0              0            
+    370000   0.53626089     18.883745      26             13             39             45             40             41             0              1              1              0              0            
+    380000   0.54806885     18.564514      26             13             39             46             41             42             0              2              1              0              0            
+    390000   0.53394312     18.449967      26             13             40             47             43             47             0              2              1              0              0            
+    400000   0.55464517     18.536159      26             13             43             49             43             47             0              2              1              0              0            
+    410000   0.55094006     18.558538      26             13             45             50             45             47             0              2              1              0              0            
+    420000   0.54632841     19.12316       26             13             45             51             45             49             0              2              1              0              0            
+    430000   0.55971531     18.763605      26             13             46             52             48             51             0              3              2              0              0            
+    440000   0.54001876     18.6697        26             13             46             53             51             52             0              3              2              0              0            
+    450000   0.57198501     17.858832      26             13             47             54             55             53             0              3              2              0              0            
+    460000   0.53477225     17.461435      26             13             49             58             55             54             0              3              2              0              0            
+    470000   0.56647775     17.281511      26             13             50             58             57             55             0              3              2              0              0            
+    480000   0.55229545     16.69086       26             13             50             63             59             57             0              3              3              0              0            
+    490000   0.55574262     16.567769      26             13             52             63             60             58             0              3              3              0              0            
+    500000   0.51929043     16.028365      26             13             53             64             66             59             0              3              3              0              0            
+    510000   0.55319156     16.187153      26             13             56             67             66             62             0              3              3              0              0            
+    520000   0.5418832      16.193125      26             13             56             68             68             62             0              3              3              0              0            
+    530000   0.55560561     16.003454      26             13             57             68             68             63             0              3              3              0              0            
+    540000   0.5298586      15.71107       26             13             59             72             71             64             0              3              3              0              0            
+    550000   0.5267398      15.640779      26             13             61             73             74             67             0              3              3              0              0            
+    560000   0.54378068     15.323913      26             13             63             74             76             68             0              3              3              0              0            
+    570000   0.54549025     15.492316      26             13             64             77             80             69             0              3              3              0              0            
+    580000   0.54291358     15.319392      26             13             65             77             81             70             0              3              3              0              0            
+    590000   0.55728796     15.132465      26             13             65             78             82             71             0              3              3              0              0            
+    600000   0.5563457      14.911455      26             13             67             79             84             73             0              3              3              0              0            
+    610000   0.56024737     14.285377      26             13             69             81             85             74             0              3              3              0              0            
+    620000   0.54850303     13.976245      26             13             71             86             86             76             0              3              3              0              0            
+    630000   0.55127804     14.076956      26             13             73             86             87             79             0              3              3              0              0            
+    640000   0.5300845      14.283256      26             13             74             87             90             80             0              3              3              0              0            
+    650000   0.56704538     14.210469      26             13             77             88             90             81             0              3              3              0              0            
+    660000   0.56985575     14.08159       26             13             81             89             90             86             0              3              3              0              0            
+    670000   0.53577864     13.844623      26             13             81             93             91             88             0              3              3              0              0            
+    680000   0.52267612     13.733789      26             13             82             94             92             89             0              3              3              0              0            
+    690000   0.52745831     13.481648      26             13             85             95             93             91             0              3              3              0              0            
+    700000   0.5212828      13.524684      26             13             86             96             93             92             0              3              3              0              0            
+    710000   0.54623116     13.174098      26             13             86             97             93             93             0              3              3              0              0            
+    720000   0.55136842     12.721025      26             13             90             99             94             95             0              3              3              0              0            
+    730000   0.54399994     12.561304      26             13             90             101            95             97             0              3              3              0              0            
+    740000   0.54624956     12.453092      26             13             91             102            97             98             0              3              3              0              0            
+    750000   0.54003109     12.767027      26             13             93             107            98             98             0              3              3              0              0            
+    760000   0.56025043     12.66895       26             13             94             110            99             98             0              3              3              0              0            
+    770000   0.54700706     12.449725      26             13             96             110            101            98             0              3              3              0              0            
+    780000   0.56350693     12.262648      26             13             96             111            103            99             0              3              3              0              0            
+    790000   0.55930795     11.655092      26             13             99             113            105            99             0              3              3              0              0            
+    800000   0.55524555     11.342567      26             13             99             116            105            99             0              3              3              0              0            
+    810000   0.56493909     11.54217       26             13             99             116            107            104            0              3              3              0              0            
+    820000   0.54835963     11.188857      26             13             100            116            107            106            0              3              3              0              0            
+    830000   0.54589203     11.822688      26             13             101            117            107            106            0              3              3              0              0            
+    840000   0.55800347     11.926579      26             13             102            118            109            106            0              3              3              0              0            
+    850000   0.5631947      11.837892      26             13             103            120            109            108            0              3              3              0              0            
+    860000   0.5448899      11.672375      26             13             103            122            111            108            0              3              3              0              0            
+    870000   0.55241478     11.632839      26             13             103            123            113            112            0              3              3              0              0            
+    880000   0.54704171     11.714948      26             13             103            126            113            114            0              3              3              0              0            
+    890000   0.55091556     11.347094      26             13             104            126            113            115            0              3              3              0              0            
+    900000   0.52829849     11.393939      26             13             105            127            113            116            0              3              3              0              0            
+    910000   0.56185806     11.663331      26             13             105            128            116            119            0              3              3              0              0            
+    920000   0.58472699     11.199849      27             13             105            130            117            119            0              3              3              0              0            
+    930000   0.54843118     11.258595      27             13             105            130            117            120            0              3              3              0              0            
+    940000   0.55764916     11.339957      27             13             106            130            120            120            0              3              3              0              0            
+    950000   0.56464822     11.11839       27             13             106            132            120            120            0              3              3              0              0            
+    960000   0.5586819      10.853442      27             13             106            133            122            120            0              3              4              0              0            
+    970000   0.55416137     11.0063        27             13             108            133            122            123            0              3              4              0              0            
+    980000   0.58193871     10.606803      27             13             109            133            122            124            0              3              4              0              0            
+    990000   0.552017       10.227966      27             13             110            134            123            126            0              3              4              0              0            
+   1000000   0.5368763      10.348933      27             13             111            134            123            128            0              3              4              0              0            
+   1010000   0.56009476     10.050529      27             13             112            136            124            130            0              3              4              0              0            
+   1020000   0.55991252     9.4557019      27             13             113            136            125            131            0              3              4              0              0            
+   1030000   0.55068693     9.2083007      27             13             113            136            127            131            0              3              4              0              0            
+   1040000   0.53079604     9.1303149      27             13             113            138            128            134            0              3              4              0              0            
+   1050000   0.53636287     9.2484764      28             13             114            140            129            135            0              3              4              0              0            
+   1060000   0.54816469     9.5685801      28             13             114            141            131            136            0              3              4              0              0            
+   1070000   0.54248353     9.1773744      28             13             116            142            132            137            0              3              4              0              0            
+   1080000   0.5610295      8.894141       28             13             116            144            132            137            0              3              4              0              0            
+   1090000   0.54990718     9.0540117      28             13             117            144            135            137            0              3              4              0              0            
+   1100000   0.55097692     9.5524091      29             13             117            144            136            137            0              3              4              0              0            
+   1110000   0.56163986     9.3887103      29             13             118            146            138            137            0              3              4              0              0            
+   1120000   0.55820696     9.0591912      29             13             120            149            142            138            0              3              4              0              0            
+   1130000   0.53467429     9.264624       29             13             121            152            142            138            0              3              4              0              0            
+   1140000   0.54010803     9.3816487      29             13             121            154            145            139            0              3              4              0              0            
+   1150000   0.5470456      8.9027723      29             13             122            157            146            141            0              3              4              0              0            
+   1160000   0.53601055     8.5114101      29             13             124            158            151            141            0              3              4              0              0            
+   1170000   0.52617129     8.1921039      29             13             125            159            152            143            0              3              4              0              0            
+   1180000   0.54431713     7.9597723      29             13             127            159            152            144            0              3              4              0              0            
+   1190000   0.53283721     8.3042503      29             13             129            161            153            146            0              3              4              0              0            
+   1200000   0.55430046     8.6022489      29             13             131            162            153            148            0              3              4              0              0            
+   1210000   0.54827154     8.7569774      29             13             132            167            154            148            0              3              4              0              0            
+   1220000   0.53993033     8.7332112      29             13             133            168            155            149            0              3              4              0              0            
+   1230000   0.53982756     8.4575359      29             13             134            168            159            151            0              3              4              0              0            
+   1240000   0.5571777      7.7215629      29             13             136            170            161            152            0              3              4              0              0            
+   1250000   0.53019443     7.7661191      29             13             138            172            162            152            0              4              4              0              0            
+   1260000   0.55615108     7.2077052      29             13             139            175            163            154            0              4              4              0              0            
+   1270000   0.56395392     7.2458997      30             13             140            175            164            156            0              4              4              0              0            
+   1280000   0.53877664     6.8263221      30             13             140            177            164            156            0              4              4              0              0            
+   1290000   0.54537205     6.4038298      31             13             141            180            165            156            0              4              4              0              0            
+   1300000   0.54185273     6.3382298      31             13             144            182            165            157            0              5              4              0              0            
+   1310000   0.55774194     6.4045352      31             13             144            184            166            157            0              6              4              0              0            
+   1320000   0.55016124     5.9076432      32             13             146            186            169            158            0              6              4              0              0            
+   1330000   0.54134051     5.8892113      32             13             146            188            170            159            0              6              5              0              0            
+   1340000   0.54834338     5.6437464      32             13             147            189            173            159            0              6              5              0              0            
+   1350000   0.54848849     5.9254833      32             13             148            192            174            159            0              6              6              0              0            
+   1360000   0.55375086     6.0154337      33             14             150            193            175            159            0              6              7              0              0            
+   1370000   0.53946787     5.7082793      33             14             152            195            175            162            0              6              7              0              0            
+   1380000   0.55789188     5.7517197      33             14             152            196            177            163            0              6              7              0              0            
+   1390000   0.56799772     5.5603464      33             14             155            202            177            164            0              6              7              0              0            
+   1400000   0.55321077     5.4420461      35             14             156            202            177            164            0              6              7              0              0            
+   1410000   0.52758534     5.8291169      36             14             159            204            179            164            0              6              7              0              0            
+   1420000   0.57003912     5.7987117      36             14             162            206            181            165            0              6              7              0              0            
+   1430000   0.57309493     5.8868314      36             14             162            206            182            165            0              6              7              0              0            
+   1440000   0.55069906     5.7481995      37             14             163            207            182            166            0              6              8              0              0            
+   1450000   0.54374075     5.6530359      37             14             166            209            182            168            0              6              8              0              0            
+   1460000   0.55858448     5.615866       37             14             167            210            183            169            0              6              8              0              0            
+   1470000   0.53202764     5.5339529      37             14             170            214            186            171            0              6              8              0              0            
+   1480000   0.56032782     5.556437       37             14             170            215            188            171            0              6              8              0              0            
+   1490000   0.53837631     5.2443437      37             14             172            217            189            171            0              7              8              0              0            
+   1500000   0.54209999     5.884823       37             14             172            218            191            173            0              7              8              0              0            
+   1510000   0.54304401     6.2101276      37             14             174            218            191            174            0              7              8              0              0            
+   1520000   0.54508552     6.3004633      37             14             175            221            192            176            0              7              8              0              0            
+   1530000   0.54925332     6.4674102      37             14             176            221            196            178            0              7              8              0              0            
+   1540000   0.54519063     6.3854143      37             14             179            224            197            178            0              7              8              0              0            
+   1550000   0.56195635     6.65186        38             14             179            226            199            179            0              7              8              0              0            
+   1560000   0.55495833     6.6674493      38             14             182            227            200            179            0              7              8              0              0            
+   1570000   0.51941962     6.7692363      38             14             183            230            203            180            0              7              8              0              0            
+   1580000   0.55125634     6.5028288      38             14             184            232            205            181            0              7              8              0              0            
+   1590000   0.52112226     6.552421       39             15             185            233            209            181            0              7              8              0              0            
+   1600000   0.54887879     6.3815568      39             15             186            233            209            183            0              7              8              0              0            
+   1610000   0.52997055     6.4131265      39             15             187            234            211            183            0              7              8              0              0            
+   1620000   0.53879274     6.4311715      39             15             187            236            214            183            0              7              8              0              0            
+   1630000   0.55945745     6.2275525      39             15             189            236            216            185            0              7              8              0              0            
+   1640000   0.53783652     6.3198947      39             15             193            237            217            186            0              7              8              0              0            
+   1650000   0.52514278     6.1298642      39             15             194            238            218            188            0              7              8              0              0            
+   1660000   0.54938901     5.8792889      39             15             195            238            219            191            0              7              8              0              0            
+   1670000   0.56424352     5.7724888      39             15             197            239            220            191            0              7              8              0              0            
+   1680000   0.53896705     5.6349025      41             15             198            239            224            193            0              7              8              0              0            
+   1690000   0.55359933     5.0890354      41             15             199            240            227            194            0              7              8              0              0            
+   1700000   0.54486576     5.0311884      42             16             199            242            230            195            0              7              8              0              0            
+   1710000   0.5571191      5.3230596      42             16             202            245            230            196            0              7              8              0              0            
+   1720000   0.5271563      4.8481496      42             16             202            247            232            196            0              7              8              0              0            
+   1730000   0.54895995     4.4167229      42             16             205            247            234            199            0              7              8              0              0            
+   1740000   0.57983828     4.2467469      43             16             206            247            237            199            0              7              8              0              0            
+   1750000   0.53784294     4.041619       43             16             207            249            239            201            0              7              8              0              0            
+   1760000   0.54396637     3.7900484      43             16             209            253            240            202            0              7              8              0              0            
+   1770000   0.53186288     3.5326426      43             16             210            254            242            202            0              7              8              0              0            
+   1780000   0.59153399     3.8167793      43             16             213            255            243            203            0              7              8              0              0            
+   1790000   0.5334888      3.5308146      43             16             215            258            246            205            0              7              8              0              0            
+   1800000   0.52693209     3.5251086      43             16             216            258            248            208            0              7              8              0              0            
+   1810000   0.54193294     3.2317824      44             17             216            260            249            210            0              7              8              0              0            
+   1820000   0.5468711      2.7881425      45             17             217            262            253            211            0              7              8              0              0            
+   1830000   0.55145911     2.8339122      46             17             218            263            256            212            0              7              8              0              0            
+   1840000   0.55002047     2.7247061      46             17             220            266            258            215            0              7              8              0              0            
+   1850000   0.56392507     2.8415052      46             17             220            267            259            217            0              7              8              0              0            
+   1860000   0.54709805     2.5660548      46             17             222            268            261            219            0              7              8              0              0            
+   1870000   0.55131973     2.7123983      47             17             225            270            263            219            0              7              8              0              0            
+   1880000   0.53621223     2.5436972      47             17             225            274            265            221            0              7              8              0              0            
+   1890000   0.54316431     2.518907       47             17             227            274            267            224            0              7              8              0              0            
+   1900000   0.53034121     2.6386805      47             17             230            274            269            225            0              7              8              0              0            
+   1910000   0.53524418     2.4071168      47             17             232            276            270            226            0              7              8              0              0            
+   1920000   0.55931945     2.2035093      48             17             234            278            273            227            0              7              8              0              0            
+   1930000   0.54286762     2.152136       49             17             236            279            276            229            0              7              8              0              0            
+   1940000   0.54714345     2.3327242      50             17             239            284            278            229            0              7              8              0              0            
+   1950000   0.5630374      2.1174394      51             17             240            285            279            233            0              7              8              0              0            
+   1960000   0.57776102     2.1585121      51             17             240            287            282            234            0              7              8              0              0            
+   1970000   0.52353624     2.4468379      52             17             243            290            286            236            0              7              8              0              0            
+   1980000   0.56043118     2.2857593      52             17             246            291            293            238            0              7              8              0              0            
+   1990000   0.53539701     2.1302577      54             17             249            292            294            240            0              7              8              0              0            
+   2000000   0.55876413     2.0757557      56             17             254            293            297            244            0              7              8              0              0            
+   2010000   0.5488805      2.0597098      57             17             257            295            301            246            0              7              8              0              0            
+   2020000   0.54683855     2.2420059      57             17             260            296            305            247            0              7              8              0              0            
+   2030000   0.54838491     2.1902083      57             17             263            299            307            250            0              7              8              0              0            
+   2040000   0.54846285     2.2720171      59             17             265            300            308            253            0              7              8              0              0            
+   2050000   0.53952683     2.2871636      59             17             266            301            310            253            0              7              8              0              0            
+   2060000   0.55671627     2.1767264      59             17             268            302            311            255            0              7              8              0              0            
+   2070000   0.52351523     2.2521208      60             17             271            303            313            257            0              7              8              0              0            
+   2080000   0.56310508     2.2942702      60             17             275            304            313            258            0              7              8              0              0            
+   2090000   0.52085811     2.477164       61             17             276            308            316            261            0              7              8              0              0            
+   2100000   0.55128276     2.2799062      61             17             278            309            320            264            0              7              8              0              0            
+Loop time of 3027.36 on 1 procs for 2000000 steps with 2210 atoms
+
+Performance: 57079.418 tau/day, 660.641 timesteps/s, 1.460 Matom-step/s
+94.0% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 1258.4     | 1258.4     | 1258.4     |   0.0 | 41.57
+Bond    | 8.8608     | 8.8608     | 8.8608     |   0.0 |  0.29
+Neigh   | 27.563     | 27.563     | 27.563     |   0.0 |  0.91
+Comm    | 14.703     | 14.703     | 14.703     |   0.0 |  0.49
+Output  | 8.4386     | 8.4386     | 8.4386     |   0.0 |  0.28
+Modify  | 1686.7     | 1686.7     | 1686.7     |   0.0 | 55.72
+Other   |            | 22.71      |            |       |  0.75
+
+Nlocal:           2210 ave        2210 max        2210 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:            107 ave         107 max         107 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:          35207 ave       35207 max       35207 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:            0 ave           0 max           0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 35207
+Ave neighs/atom = 15.930769
+Ave special neighs/atom = 0.64162896
+Neighbor list builds = 9386
+Dangerous builds = 0
+    #####################################################
+    # Replication => change half of the atoms to U's
+
+    # Define the total number of atoms in your system
+    variable total_atoms equal 200
+
+    # Calculate half of the atoms
+    variable half_atoms equal ${total_atoms}/2
+    variable half_atoms equal 200/2
+
+    # Loop through half of the atoms and randomly change their types to U
+    label loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 161 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 100-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 25 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 99-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 172 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 98-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 149 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 97-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 47 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 96-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 127 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 95-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 156 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 94-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 103 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 93-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 8 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 92-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 76 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 91-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 74 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 90-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 61 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 89-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 42 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 88-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 184 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 87-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 81 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 86-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 109 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 85-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 120 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 84-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 116 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 83-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 166 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 82-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 191 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 81-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 31 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 80-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 145 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 79-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 175 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 78-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 88 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 77-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 52 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 76-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 38 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 75-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 98 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 74-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 127 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 73-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 123 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 72-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 11 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 71-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 75 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 70-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 61 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 69-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 114 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 68-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 125 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 67-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 58 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 66-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 24 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 65-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 154 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 64-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 102 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 63-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 108 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 62-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 21 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 61-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 131 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 60-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 193 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 59-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 12 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 58-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 166 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 57-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 43 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 56-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 64 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 55-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 16 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 54-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 164 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 53-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 137 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 52-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 16 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 51-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 9 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 50-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 189 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 49-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 40 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 48-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 52 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 47-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 90 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 46-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 91 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 45-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 168 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 44-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 156 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 43-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 185 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 42-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 72 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 41-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 15 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 40-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 183 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 39-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 99 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 38-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 68 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 37-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 86 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 36-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 162 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 35-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 199 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 34-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 50 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 33-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 32 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 32-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 121 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 31-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 55 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 30-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 14 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 29-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 38 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 28-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 190 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 27-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 157 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 26-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 112 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 25-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 197 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 24-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 170 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 23-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 193 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 22-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 138 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 21-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 120 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 20-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 56 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 19-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 10 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 18-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 172 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 17-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 103 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 16-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 96 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 15-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 73 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 14-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 112 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 13-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 22 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 12-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 56 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 11-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 128 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 10-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 98 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 9-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 88 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 8-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 36 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 7-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 53 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 6-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 60 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 5-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 15 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 4-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 144 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 3-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 23 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 2-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopa
+        # Generate a random atom index
+        variable random_index equal floor(random(1,${total_atoms},27939))
+        variable random_index equal floor(random(1,200,27939))
+
+        # Change the atom's type to U
+        set atom ${random_index} type U
+        set atom 25 type U
+Setting atom values ...
+  1 settings made for type
+
+        # Decrease the counter for half_atoms
+        variable half_atoms equal ${half_atoms}-1
+        variable half_atoms equal 1-1
+
+        # If half_atoms counter is not zero, continue the loop
+        if '${half_atoms} > 0' then             "jump SELF loopa"         else "jump SELF loopaend"
+jump SELF loopaend
+
+
+    #####################################################
+
+jump SELF loopreplication
+    run 2000000
+Generated 0 of 45 mixed pair_coeff terms from geometric mixing rule
+WARNING: Commun

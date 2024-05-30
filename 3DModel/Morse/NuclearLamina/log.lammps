@@ -1,0 +1,13 @@
+LAMMPS (17 Apr 2024 - Development - patch_17Apr2024-139-g008a8fcb11-modified)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+# VARIABLES
+variable fname index InitialFile.txt
+variable simname index InitialFile
+
+# Initialization
+units		lj
+boundary	    s s s
+atom_style	bond
+ERROR: Unrecognized atom style 'bond' is part of the MOLECULE package which is not enabled in this LAMMPS binary. (src/atom.cpp:730)
+Last command: atom_style	bond

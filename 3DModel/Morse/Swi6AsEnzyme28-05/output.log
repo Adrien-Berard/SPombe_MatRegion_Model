@@ -1,0 +1,417 @@
+LAMMPS (17 Apr 2024)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (src/comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+Reading data file ...
+  orthogonal box = (0 0 0) to (200 200 200)
+  1 by 2 by 5 MPI processor grid
+  reading atom labelmap ...
+  reading bond labelmap ...
+  reading angle labelmap ...
+  reading dihedral labelmap ...
+  reading atoms ...
+  2200 atoms
+  scanning bonds ...
+  6 = max bonds/atom
+  scanning angles ...
+  1 = max angles/atom
+  scanning dihedrals ...
+  1 = max dihedrals/atom
+  orthogonal box = (0 0 0) to (200 200 200)
+  1 by 2 by 5 MPI processor grid
+  reading bonds ...
+  199 bonds
+  reading angles ...
+  198 angles
+  reading dihedrals ...
+  197 dihedrals
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0       
+  special bond factors coul:  0        0        0       
+     2 = max # of 1-2 neighbors
+     2 = max # of 1-3 neighbors
+     4 = max # of 1-4 neighbors
+    11 = max # of special neighbors
+  special bonds CPU = 0.001 seconds
+  read_data CPU = 0.013 seconds
+Finding 1-2 1-3 1-4 neighbors ...
+  special bond factors lj:    0        0        0.5     
+  special bond factors coul:  0        0        0.5     
+     2 = max # of 1-2 neighbors
+     2 = max # of 1-3 neighbors
+     4 = max # of 1-4 neighbors
+    11 = max # of special neighbors
+  special bonds CPU = 0.000 seconds
+200 atoms in group chromatin
+50 atoms in group Mtype
+30 atoms in group cenH
+3 atoms in group promoter
+3 atoms in group promo_and_poly
+8 atoms in group yfp
+6 atoms in group mcherry
+170 atoms in group outOFCenH
+50 atoms in group M_Atoms
+197 atoms in group NotPromoter
+14 atoms in group TranscriptionReactionGroup
+2000 atoms in group swi6
+2200 atoms in group atoms_mobile
+Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 10
+  ghost atom cutoff = 10
+  binsize = 5, bins = 40 40 40
+  2 neighbor lists, perpetual/occasional/extra = 1 1 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+Setting up Verlet run ...
+  Unit style    : lj
+  Current step  : 0
+  Time step     : 0.01
+Per MPI rank memory allocation (min/avg/max) = 8.537 | 8.721 | 8.996 Mbytes
+   Step          Temp     
+         0   1            
+     10000   1.0096082    
+     20000   1.0066008    
+     30000   1.0305173    
+     40000   0.97899344   
+     50000   0.98681422   
+     60000   0.97986175   
+     70000   0.97638055   
+     80000   0.97667294   
+     90000   0.96796033   
+    100000   1.0191967    
+Loop time of 36.891 on 10 procs for 100000 steps with 2200 atoms
+
+Performance: 2342036.549 tau/day, 2710.690 timesteps/s, 5.964 Matom-step/s
+99.9% CPU use with 10 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.27323    | 3.9387     | 31.028     | 461.2 | 10.68
+Bond    | 0.0095587  | 0.18811    | 1.3129     |  88.9 |  0.51
+Neigh   | 0.86715    | 0.86936    | 0.87189    |   0.2 |  2.36
+Comm    | 1.5638     | 23.505     | 33.76      | 296.3 | 63.72
+Output  | 0.0001342  | 0.00089921 | 0.0038501  |   0.0 |  0.00
+Modify  | 0.83526    | 0.94644    | 1.4469     |  17.5 |  2.57
+Other   |            | 7.442      |            |       | 20.17
+
+Nlocal:            220 ave         419 max         172 min
+Histogram: 5 3 1 0 0 0 0 0 0 1
+Nghost:          212.9 ave         439 max         161 min
+Histogram: 4 5 0 0 0 0 0 0 0 1
+Neighs:         2926.3 ave       28193 max          87 min
+Histogram: 9 0 0 0 0 0 0 0 0 1
+FullNghs:            0 ave           0 max           0 min
+Histogram: 10 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 29263
+Ave neighs/atom = 13.301364
+Ave special neighs/atom = 0.54
+Neighbor list builds = 4141
+Dangerous builds = 0
+System init for write_restart ...
+Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
+Read molecule template AM_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template AM_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template AU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 1
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template AU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 2
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template MA_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 4
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template MA_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 4
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template MU_post:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+Read molecule template MU_pre:
+# This is a molecule template for molecule 1
+  1 molecules
+  0 fragments
+  2 atoms with max type 3
+  0 bonds with max type 0
+  0 angles with max type 0
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+dynamic group bond_react_MASTER_group defined
+72 atoms in group typeA
+78 atoms in group typeU
+50 atoms in group typeM
+2000 atoms in group typeSwi6
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Your simulation uses code contributions which should be cited:
+- fix bond/react: reacter.org doi:10.1016/j.polymer.2017.09.038, doi:10.1021/acs.macromol.0c02012
+The log file lists these citations in BibTeX format.
+
+CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
+
+Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 10
+  ghost atom cutoff = 10
+  binsize = 5, bins = 40 40 40
+  3 neighbor lists, perpetual/occasional/extra = 1 2 0
+  (1) pair morse, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+  (2) compute coord/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin
+      stencil: full/bin/3d
+      bin: standard
+  (3) fix bond/react, occasional, copy from (1)
+      attributes: half, newton on
+      pair build: copy
+      stencil: none
+      bin: none
+Setting up Verlet run ...
+  Unit style    : lj
+  Current step  : 100000
+  Time step     : 0.001
+Per MPI rank memory allocation (min/avg/max) = 11.18 | 11.46 | 11.68 Mbytes
+---
+keywords: ['Step', 'Temp', 'c_R2[0]', 'f_4[1]', 'f_4[2]', 'f_4[3]', 'f_4[4]', ]
+data:
+  - [100000, 1.01919665346486, 3.68837299829001, 0, 0, 0, 0, ]
+reacted_atom_IDs: reacUM 102 160
+reacted_atom_IDs: reacUM 152 124
+reacted_atom_IDs: reacUM 65 10
+  - [110000, 0.996325383217152, 3.66761712521659, 1, 1, 0, 1, ]
+reacted_atom_IDs: reacAU 39 46
+reacted_atom_IDs: reacAU 117 111
+reacted_atom_IDs: reacAU 121 188
+  - [120000, 1.0144231650478, 3.65436078389658, 2, 2, 0, 2, ]
+reacted_atom_IDs: reacUM 14 163
+reacted_atom_IDs: reacUM 109 115
+reacted_atom_IDs: reacUM 9 101
+  - [130000, 1.01192884756165, 3.65166102646108, 3, 3, 0, 3, ]
+reacted_atom_IDs: reacAU 189 123
+reacted_atom_IDs: reacAU 29 12
+reacted_atom_IDs: reacAU 34 18
+  - [140000, 0.996236821753417, 3.62401396857952, 4, 4, 0, 4, ]
+reacted_atom_IDs: reacUM 85 35
+reacted_atom_IDs: reacUM 39 8
+reacted_atom_IDs: reacUM 132 176
+  - [150000, 1.01585306918304, 3.61154934891159, 5, 5, 0, 5, ]
+reacted_atom_IDs: reacAU 145 158
+reacted_atom_IDs: reacAU 170 95
+reacted_atom_IDs: reacAU 50 36
+  - [160000, 0.986997771409388, 3.65903492925364, 6, 6, 0, 6, ]
+reacted_atom_IDs: reacAU 98 196
+reacted_atom_IDs: reacAU 164 61
+reacted_atom_IDs: reacAU 160 181
+  - [170000, 0.969488653301703, 3.64610051808034, 7, 7, 0, 7, ]
+reacted_atom_IDs: reacUM 90 188
+reacted_atom_IDs: reacUM 160 180
+reacted_atom_IDs: reacUM 133 140
+  - [180000, 1.0052100920352, 3.61838394935242, 8, 8, 0, 8, ]
+reacted_atom_IDs: reacMU 3 29
+reacted_atom_IDs: reacMU 101 11
+reacted_atom_IDs: reacMU 191 124
+  - [190000, 1.02018534574527, 3.61596995319695, 9, 9, 0, 9, ]
+reacted_atom_IDs: reacMU 163 132
+reacted_atom_IDs: reacMU 20 60
+reacted_atom_IDs: reacMU 138 62
+  - [200000, 1.03047163158566, 3.6488839352293, 10, 10, 0, 10, ]
+reacted_atom_IDs: reacUM 179 132
+reacted_atom_IDs: reacUM 45 111
+reacted_atom_IDs: reacUM 149 180
+  - [210000, 0.998279642991443, 3.6418978573862, 11, 11, 0, 11, ]
+reacted_atom_IDs: reacUM 99 196
+reacted_atom_IDs: reacUM 134 177
+reacted_atom_IDs: reacUM 12 22
+  - [220000, 0.995195953917592, 3.67100276208361, 12, 12, 0, 12, ]
+reacted_atom_IDs: reacMU 100 11
+reacted_atom_IDs: reacMU 68 41
+reacted_atom_IDs: reacMU 39 1
+  - [230000, 0.964207787584261, 3.65388820930604, 13, 13, 0, 13, ]
+reacted_atom_IDs: reacAU 145 157
+reacted_atom_IDs: reacAU 152 193
+reacted_atom_IDs: reacAU 102 66
+  - [240000, 0.995816950882994, 3.63444659346391, 14, 14, 0, 14, ]
+reacted_atom_IDs: reacMU 173 127
+reacted_atom_IDs: reacMU 179 159
+reacted_atom_IDs: reacMU 3 38
+  - [250000, 1.00218312873197, 3.63568492266243, 15, 15, 0, 15, ]
+reacted_atom_IDs: reacAU 10 64
+reacted_atom_IDs: reacAU 82 91
+reacted_atom_IDs: reacAU 134 140
+  - [260000, 0.990959817381482, 3.64390743490301, 16, 16, 0, 16, ]
+reacted_atom_IDs: reacUM 74 98
+reacted_atom_IDs: reacUM 110 73
+reacted_atom_IDs: reacUM 173 196
+  - [270000, 1.018395227463, 3.61027585728681, 17, 17, 0, 17, ]
+reacted_atom_IDs: reacAU 12 58
+reacted_atom_IDs: reacAU 70 43
+reacted_atom_IDs: reacAU 163 60
+  - [280000, 1.00995613845645, 3.59046602037646, 18, 18, 0, 18, ]
+reacted_atom_IDs: reacUM 100 161
+reacted_atom_IDs: reacUM 38 26
+reacted_atom_IDs: reacUM 10 63
+  - [290000, 1.02237113077935, 3.6215872862002, 19, 19, 0, 19, ]
+reacted_atom_IDs: reacMU 13 29
+reacted_atom_IDs: reacMU 166 20
+reacted_atom_IDs: reacMU 155 147
+  - [300000, 1.01683648379428, 3.62396141329309, 20, 20, 0, 20, ]
+reacted_atom_IDs: reacAU 13 18
+reacted_atom_IDs: reacAU 102 159
+reacted_atom_IDs: reacAU 163 10
+  - [310000, 1.03386080140337, 3.59054697216097, 21, 21, 0, 21, ]
+reacted_atom_IDs: reacMU 173 198
+reacted_atom_IDs: reacMU 82 77
+reacted_atom_IDs: reacMU 166 130
+  - [320000, 0.975561978700552, 3.63640606860648, 22, 22, 0, 22, ]
+reacted_atom_IDs: reacMU 28 21
+reacted_atom_IDs: reacMU 91 76
+reacted_atom_IDs: reacMU 52 16
+  - [330000, 1.01803653464614, 3.62352247587284, 23, 23, 0, 23, ]
+reacted_atom_IDs: reacAU 28 20
+reacted_atom_IDs: reacAU 132 137
+reacted_atom_IDs: reacAU 102 69
+  - [340000, 0.988522403375343, 3.61543991640039, 24, 24, 0, 24, ]
+reacted_atom_IDs: reacMU 180 199
+reacted_atom_IDs: reacMU 3 22
+reacted_atom_IDs: reacMU 150 175
+  - [350000, 1.00130911856294, 3.60211807451941, 25, 25, 0, 25, ]
+reacted_atom_IDs: reacAU 114 183
+reacted_atom_IDs: reacAU 177 135
+reacted_atom_IDs: reacAU 159 180
+  - [360000, 1.02142655466696, 3.64352875068052, 26, 26, 0, 26, ]
+reacted_atom_IDs: reacMU 132 176
+reacted_atom_IDs: reacMU 194 55
+reacted_atom_IDs: reacMU 170 56
+  - [370000, 1.02154160573014, 3.61247741638854, 27, 27, 0, 27, ]
+reacted_atom_IDs: reacAU 153 180
+reacted_atom_IDs: reacAU 103 140
+reacted_atom_IDs: reacAU 74 183
+  - [380000, 0.991790972787564, 3.5922967249015, 28, 28, 0, 28, ]
+reacted_atom_IDs: reacMU 65 40
+reacted_atom_IDs: reacMU 197 126
+reacted_atom_IDs: reacMU 45 86
+  - [390000, 1.02021229252507, 3.60741403284068, 29, 29, 0, 29, ]
+reacted_atom_IDs: reacUM 3 29
+reacted_atom_IDs: reacUM 30 2
+reacted_atom_IDs: reacUM 198 172
+  - [400000, 0.99211168291144, 3.61451551428083, 30, 30, 0, 30, ]
+reacted_atom_IDs: reacUM 79 192
+reacted_atom_IDs: reacUM 118 184
+reacted_atom_IDs: reacUM 92 76
+  - [410000, 0.990799209578175, 3.6212927503474, 31, 31, 0, 31, ]
+reacted_atom_IDs: reacAU 74 183
+reacted_atom_IDs: reacAU 194 54
+reacted_atom_IDs: reacAU 195 55
+  - [420000, 1.00058609019351, 3.62536616496986, 32, 32, 0, 32, ]
+reacted_atom_IDs: reacMU 4 32
+reacted_atom_IDs: reacMU 74 93
+reacted_atom_IDs: reacMU 43 69
+  - [430000, 1.0050640076875, 3.6122798224615, 33, 33, 0, 33, ]
+reacted_atom_IDs: reacAU 1 29
+reacted_atom_IDs: reacAU 63 24
+reacted_atom_IDs: reacAU 99 9
+  - [440000, 0.982338009819983, 3.62374731930864, 34, 34, 0, 34, ]
+reacted_atom_IDs: reacAU 58 11
+reacted_atom_IDs: reacAU 155 119
+reacted_atom_IDs: reacAU 140 40
+  - [450000, 1.0040907024475, 3.63579002368754, 35, 35, 0, 35, ]
+reacted_atom_IDs: reacAU 4 8
+reacted_atom_IDs: reacAU 89 111
+reacted_atom_IDs: reacAU 138 64
+  - [460000, 0.997572474153409, 3.63747222533001, 36, 36, 0, 36, ]
+reacted_atom_IDs: reacUM 152 125
+reacted_atom_IDs: reacUM 84 51
+reacted_atom_IDs: reacUM 157 104
+  - [470000, 1.01745957772975, 3.63558052141771, 37, 37, 0, 37, ]
+reacted_atom_IDs: reacAU 97 93
+reacted_atom_IDs: reacAU 142 66
+reacted_atom_IDs: reacAU 79 92
+  - [480000, 1.02607393528842, 3.63144922049945, 38, 38, 0, 38, ]
+reacted_atom_IDs: reacMU 114 108
+reacted_atom_IDs: reacMU 14 4
+reacted_atom_IDs: reacMU 183 125
+  - [490000, 0.997374964780544, 3.63212908827863, 39, 39, 0, 39, ]
+reacted_atom_IDs: reacAU 139 146
+reacted_atom_IDs: reacAU 160 64
+reacted_atom_IDs: reacAU 109 114
+  - [500000, 1.0121892028253, 3.63049782378648, 40, 40, 0, 40, ]
+reacted_atom_IDs: reacMU 27 20
+reacted_atom_IDs: reacMU 11 22
+reacted_atom_IDs: reacMU 56 165
+  - [510000, 1.00666778024268, 3.62647285820304, 41, 41, 0, 41, ]
+reacted_atom_IDs: reacMU 75 98
+reacted_atom_IDs: reacMU 193 54
+reacted_atom_IDs: reacMU 195 168
+  - [520000, 0.988099227613282, 3.59079389576708, 42, 42, 0, 42, ]
+reacted_atom_IDs: reacAU 14 4
+reacted_atom_IDs: reacAU 117 154
+reacted_atom_IDs: reacAU 197 98
+  - [530000, 0.978885800171508, 3.62256102279488, 43, 43, 0, 43, ]
+reacted_atom_IDs: reacAU 158 141
+reacted_atom_IDs: reacAU 125 184
+reacted_atom_IDs: reacAU 3 23
+  - [540000, 1.00741559031162, 3.62056983872538, 44, 44, 0, 44, ]
