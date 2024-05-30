@@ -18,7 +18,7 @@ Reading data file ...
   1 by 2 by 5 MPI processor grid
   reading atom labelmap ...
   reading atoms ...
-  10000 atoms
+  1000 atoms
 Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        0        0       
   special bond factors coul:  0        0        0       
@@ -26,8 +26,8 @@ Finding 1-2 1-3 1-4 neighbors ...
      0 = max # of 1-3 neighbors
      0 = max # of 1-4 neighbors
      6 = max # of special neighbors
-  special bonds CPU = 0.001 seconds
-  read_data CPU = 0.027 seconds
+  special bonds CPU = 0.000 seconds
+  read_data CPU = 0.004 seconds
 
 # Dreiding potential information
 neighbor	2.0 bin
@@ -44,9 +44,9 @@ pair_coeff	* * 8 2 2.0 # Define all pair coeff to be like that
 # Swi 6 group
 
 group swi6 type 1
-10000 atoms in group swi6
+1000 atoms in group swi6
 group atoms_mobile type 1
-10000 atoms in group atoms_mobile
+1000 atoms in group atoms_mobile
 #####################################################
 
 
@@ -88,7 +88,7 @@ fix		1 all nve/limit 0.5
 ####################################################
 # Compute the density of Swi6
 group typeSwi6 type 1
-10000 atoms in group typeSwi6
+1000 atoms in group typeSwi6
 
 compute myChunks3d all chunk/atom bin/3d x lower 10 y lower 10 z lower 10 units box
 
@@ -128,20 +128,20 @@ Neighbor list info ...
       pair build: half/bin/newton
       stencil: half/bin/3d
       bin: standard
-Per MPI rank memory allocation (min/avg/max) = 145.8 | 145.9 | 146 Mbytes
+Per MPI rank memory allocation (min/avg/max) = 145.7 | 145.8 | 145.9 Mbytes
    Step          Temp     
          0   1            
-     10000   1.3101454    
-     20000   1.1000778    
-     30000   1.0940664    
-     40000   1.0489781    
-     50000   1.0283232    
-     60000   1.0400533    
-     70000   1.0455074    
-     80000   1.0056102    
-     90000   1.0153673    
-    100000   1.0099399    
-    110000   0.99459838   
-    120000   1.0231837    
-    130000   1.005056     
-    1400
+     10000   1.121846     
+     20000   0.99973241   
+     30000   1.044439     
+     40000   1.0304864    
+     50000   1.0261389    
+     60000   1.0073998    
+     70000   1.0108346    
+     80000   1.0195915    
+     90000   0.99888329   
+    100000   1.0396616    
+    110000   1.0027712    
+    120000   0.99972032   
+    130000   0.9521306    
+    140000
