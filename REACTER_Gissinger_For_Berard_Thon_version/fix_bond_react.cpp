@@ -3098,7 +3098,7 @@ void FixBondReact::update_everything()
 
     if (pass == 0 || comm->me == 0)
       for (int i = 0; i < update_num_mega; i++) {
-        rxnID = (int) global_mega_glove[0][i];
+        rxnID = (int) update_mega_glove[0][i];
         printf("reacted_atom_IDs: %s %d %d\n",rxn_name[rxnID],update_mega_glove[ibonding[rxnID]][i],update_mega_glove[jbonding[rxnID]][i]);
       }
 
