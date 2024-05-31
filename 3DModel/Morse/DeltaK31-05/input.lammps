@@ -158,12 +158,12 @@ dump myDump chromatin custom 10000 id_and_type.dat id type
 
 
 label loopreplication
-    run 4000000
+    run 1000000
     #####################################################
     # Replication => change half of the atoms to U's
 
     # Define the total number of atoms in your system
-    variable total_atoms equal 200
+    variable total_atoms equal 80
 
     # Calculate half of the atoms
     variable half_atoms equal ${total_atoms}/2
