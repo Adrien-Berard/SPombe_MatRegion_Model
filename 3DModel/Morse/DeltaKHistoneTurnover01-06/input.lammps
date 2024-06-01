@@ -71,7 +71,7 @@ thermo_style	custom step temp
 thermo          10000
 
 
-run		5000000
+run		1000000
 
 write_restart restart.equil
 # Not necessary anymore to have a restart file as it is already loaded
@@ -160,7 +160,36 @@ dump myDump chromatin custom 10000 id_and_type.dat id type
 
 
 label loopreplication
-    run 1000000
+    run 2000000
+
+#####################################################
+# Nested loop to change one random nucleosome's type every 10,000 steps
+variable total_steps equal 2000000
+variable steps_per_iteration equal 10000
+variable iterations equal ${total_steps}/${steps_per_iteration}
+
+label loopnucleosome
+
+    # Generate a random atom index
+    variable random_index equal floor(random(1,80,27939))
+
+    # Generate a random type (assuming types 1 to 3)
+    variable random_type equal floor(random(1,4,489))
+
+    # Change the atom's type to the random type
+    set atom ${random_index} type ${random_type}
+
+    # Run for 10,000 steps
+    run ${steps_per_iteration}
+
+    # Decrease the iterations counter using a separate variable for the decrement
+    variable new_iterations equal ${iterations}-1
+    variable iterations equal ${new_iterations}
+
+    # If iterations counter is not zero, continue the loop
+    if "${iterations} > 0" then "jump SELF loopnucleosome"
+#####################################################
+
     #####################################################
     # Replication => change half of the atoms to U's
 
@@ -182,16 +211,9 @@ label loopreplication
         variable half_atoms equal ${half_atoms}-1
 
         # If half_atoms counter is not zero, continue the loop
-        if '${half_atoms} > 0' then &
-            "jump SELF loopa" &
-        else "jump SELF loopaend"
-
+        if "${half_atoms} > 0" then "jump SELF loopa"
+        
     label loopaend
 
-
-    #####################################################
-
 jump SELF loopreplication
-
-
 #####################################################
