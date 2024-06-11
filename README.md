@@ -220,7 +220,7 @@ cd build
 ```
 Let us now install the packages :
 ```bash
-cmake -C ../cmake/presets/most.cmake -C ../cmake/presets/nolib.cmake  # If there is an error message, add the current folder path at the end : /home/username/modified_lammps/build 
+cmake -C ../cmake/presets/most.cmake -C ../cmake/presets/nolib.cmake ../cmake # If there is an error message, add the current folder path at the end : /home/username/modified_lammps/build 
 ```
 
 If you don't have much space or are minimalist, you can only install the necessary packages with those command lines:
