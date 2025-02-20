@@ -1,5 +1,0 @@
-# Auto detect text files and perform LF normalization
-* text=auto
-*.lammpstrj filter=lfs diff=lfs merge=lfs -text
-*.profile filter=lfs diff=lfs merge=lfs -text
-3DModel/Morse/BistabilitySwi6-27-05/density3d.profile filter=lfs diff=lfs merge=lfs -text
